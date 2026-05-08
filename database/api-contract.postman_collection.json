@@ -1,0 +1,170 @@
+{
+	"info": {
+		"name": "Smart Campus Printing System",
+		"description": "API Contract for the CS-222 Printing Management System.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Auth",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"url": {"raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"]},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Muhammad\",\n  \"lastName\": \"Qazi\",\n  \"email\": \"qazi.m@campus.edu.pk\",\n  \"password\": \"SecurePass123!\",\n  \"role\": \"STUDENT\"\n}"
+						}
+					},
+					"response": [
+						{
+							"name": "Created",
+							"status": "Created",
+							"code": 201,
+							"body": "{\n  \"message\": \"User registered successfully\",\n  \"userId\": 101\n}"
+						}
+					]
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"url": {"raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"]},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"qazi.m@campus.edu.pk\",\n  \"password\": \"SecurePass123!\"\n}"
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"expiresIn\": 3600\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Profile (Me)",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+						"url": {"raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"]}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"userId\": 101,\n  \"firstName\": \"Muhammad\",\n  \"email\": \"qazi.m@campus.edu.pk\",\n  \"role\": \"STUDENT\",\n  \"balance\": 500.00\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "2. Jobs (User)",
+			"item": [
+				{
+					"name": "Submit Print Job",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+						"url": {"raw": "{{baseUrl}}/jobs", "host": ["{{baseUrl}}"], "path": ["jobs"]},
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "file", "type": "file", "src": "assignment.pdf"},
+								{"key": "pageCount", "value": "15", "type": "text"},
+								{"key": "jobType", "value": "B&W", "type": "text"}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Created",
+							"status": "Created",
+							"code": 201,
+							"body": "{\n  \"jobId\": 5042,\n  \"status\": \"PENDING\",\n  \"estimatedCost\": 75.00\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Job Details & QR",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+						"url": {"raw": "{{baseUrl}}/jobs/5042", "host": ["{{baseUrl}}"], "path": ["jobs", "5042"]}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"jobId\": 5042,\n  \"status\": \"COMPLETED\",\n  \"binId\": \"B4\",\n  \"qrToken\": \"campus-print-secure-token-8f92a\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "3. Admin Operations",
+			"item": [
+				{
+					"name": "Handover Job (Deduct Points)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"url": {"raw": "{{baseUrl}}/admin/jobs/5042/handover", "host": ["{{baseUrl}}"], "path": ["admin", "jobs", "5042", "handover"]},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"qrToken\": \"campus-print-secure-token-8f92a\"\n}"
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"message\": \"Handover authorised. 75.00 PKR deducted.\",\n  \"newBalance\": 425.00\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "4. Transactions",
+			"item": [
+				{
+					"name": "Top-up Balance",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{jwt_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"url": {"raw": "{{baseUrl}}/transactions/topup", "host": ["{{baseUrl}}"], "path": ["transactions", "topup"]},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 1000.00\n}"
+						},
+						"description": "Adds balance to the user account in PKR."
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000"
+		}
+	]
+}
