@@ -96,3 +96,52 @@
     transform: translateY(0);
   }
 }
+
+
+.title {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filters button {
+  background: #111827;
+  color: white;
+  margin-right: 8px;
+}
+
+.filters button:hover {
+  background: #2563eb;
+}
+
+
+
+
+.search-box {
+  margin-bottom: 16px;
+}
+
+.filters {
+  margin-top: 8px;   /* 👈 this is the missing gap */
+  margin-bottom: 15px;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}

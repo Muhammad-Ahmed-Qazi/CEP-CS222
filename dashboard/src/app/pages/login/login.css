@@ -2,7 +2,8 @@
   height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;  
+  padding-top: 90px;       /* 👈 controls how high it sits */
   background: #f3f4f6;
 }
 
@@ -36,4 +37,19 @@ button {
 
 button:hover {
   background: #2563eb;
+}
+
+.title {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

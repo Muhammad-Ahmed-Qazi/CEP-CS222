@@ -17,7 +17,7 @@ export class Queue {
   searchText = '';
   selectedStatus = 'All';
   page = 1;
-  pageSize = 2;
+  pageSize = 5;
 
   get jobs() {
     return this.dataService.getJobs();
