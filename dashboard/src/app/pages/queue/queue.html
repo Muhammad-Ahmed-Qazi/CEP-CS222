@@ -1,0 +1,55 @@
+<h2 class="title">Print Queue</h2>
+<div class="top-bar">
+  <input
+    type="text"
+    placeholder="Search by user or file..."
+    [(ngModel)]="searchText"
+  />
+</div>
+
+
+<div class="filters">
+  <button (click)="selectedStatus='All'">All</button>
+  <button (click)="selectedStatus='Pending'">Pending</button>
+  <button (click)="selectedStatus='Printing'">Printing</button>
+  <button (click)="selectedStatus='Completed'">Completed</button>
+</div>
+<table class="queue-table">
+  <thead>
+    <tr>
+      <th>Job ID</th>
+      <th>User</th>
+      <th>File</th>
+      <th>Pages</th>
+      <th>Status</th>
+      <th>Time</th>
+    </tr>
+  </thead>
+
+ <tbody>
+  <tr *ngFor="let job of paginatedJobs">
+    <td>{{ job.id }}</td>
+    <td>{{ job.user }}</td>
+    <td>{{ job.file }}</td>
+    <td>{{ job.pages }}</td>
+    <td>
+      <span class="status" [ngClass]="job.status.toLowerCase()">
+        {{ job.status }}
+      </span>
+    </td>
+    <td>{{ job.time }}</td>
+  </tr>
+</tbody>
+</table>
+
+<div class="pagination">
+  <button (click)="page = page - 1" [disabled]="page === 1">
+    Prev
+  </button>
+
+  <span>Page {{ page }} / {{ totalPages }}</span>
+
+  <button (click)="page = page + 1" [disabled]="page === totalPages">
+    Next
+  </button>
+</div>

@@ -1,0 +1,25 @@
+nav a {
+  display: block;
+  color: #cbd5e1;
+  text-decoration: none;
+  padding: 10px;
+  border-radius: 8px;
+  margin: 6px 0;
+  transition: 0.2s;
+}
+
+nav a:hover {
+  background: #374151;
+  color: white;
+}
+
+/* 🔥 ACTIVE PAGE STYLE */
+nav a.active {
+  background: #3b82f6;
+  color: white;
+  font-weight: 600;
+}
+.logo {
+  font-size: 18px;
+  margin-bottom: 20px;
+}
