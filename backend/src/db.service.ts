@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import oracledb from 'oracledb';
+import oracledb, { Connection } from 'oracledb';
 
 @Injectable()
 export class DbService {
-  async getConnection() {
-    return oracledb.getConnection({
-      user: 'system',
-      password: 'maqSQL!15082004',
+  async getConnection(): Promise<Connection> {
+    return await oracledb.getConnection({
+      user: 'PrintAdmin',
+      password: 'cep-cs222',
       connectString: 'localhost:1521/XE',
     });
   }
