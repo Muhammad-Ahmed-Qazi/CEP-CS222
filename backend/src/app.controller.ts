@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { DbService } from './db.service';
+import { DbService } from './db/db.service';
 import { Connection } from 'oracledb';
 
 @Controller()

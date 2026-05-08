@@ -1,22 +1,31 @@
-import { Controller, Post, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private authService: AuthService) {}
 
   @Post('register')
-  register(): string {
-    return this.authService.register();
+  async register(@Body() body) {
+    return this.authService.register(body);
   }
 
   @Post('login')
-  login(): string {
-    return this.authService.login();
+  async login(@Body() body) {
+    return this.authService.login(body.email, body.password);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMe(): string {
-    return this.authService.getMe();
+  async getProfile(@Request() req) {
+    return req.user; // In a real scenario, fetch joined data from DB here
   }
 }
