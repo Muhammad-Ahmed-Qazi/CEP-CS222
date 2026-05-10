@@ -1,17 +1,67 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Profile
-    </ion-title>
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>My Profile</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="logout()">
+        <ion-icon name="log-out-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Profile</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content class="ion-padding">
+  
+  <div *ngIf="isLoading" class="ion-text-center ion-padding">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
 
-  <app-explore-container name="Profile page"></app-explore-container>
+  <ng-container *ngIf="!isLoading && profile">
+    <div class="profile-header ion-text-center ion-margin-bottom">
+      <ion-avatar class="large-avatar">
+        <img src="https://ui-avatars.com/api/?name={{profile.firstName}}+{{profile.lastName}}&background=random" />
+      </ion-avatar>
+      <h2>{{ profile.firstName }} {{ profile.lastName }}</h2>
+      <p>{{ profile.email }}</p>
+      <ion-badge color="medium">{{ profile.role | uppercase }}</ion-badge>
+    </div>
+
+    <ion-card class="balance-card ion-margin-bottom">
+      <ion-card-header>
+        <ion-card-subtitle>Current Balance</ion-card-subtitle>
+        <ion-card-title class="balance-amount">PKR {{ profile.accountBalance | number:'1.2-2' }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-button expand="block" (click)="presentTopUpPrompt()">
+          <ion-icon name="wallet-outline" slot="start"></ion-icon>
+          Top Up Balance
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-list>
+      <ion-list-header>
+        <ion-label>Recent Transactions</ion-label>
+      </ion-list-header>
+
+      <div *ngIf="transactions.length === 0" class="ion-text-center ion-padding">
+        <p style="color: #666;">No recent transactions.</p>
+      </div>
+
+      <ion-item *ngFor="let txn of transactions">
+        <ion-icon 
+          [name]="txn.amount > 0 ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'" 
+          [color]="txn.amount > 0 ? 'success' : 'danger'" 
+          slot="start">
+        </ion-icon>
+        <ion-label>
+          <h3>{{ txn.amount > 0 ? 'Top Up' : 'Printing Deduction' }}</h3>
+          <p>{{ txn.transactionDate | date:'medium' }}</p>
+        </ion-label>
+        <ion-note slot="end" [color]="txn.amount > 0 ? 'success' : 'danger'">
+          {{ txn.amount > 0 ? '+' : '' }}{{ txn.amount | number:'1.2-2' }}
+        </ion-note>
+      </ion-item>
+    </ion-list>
+  </ng-container>
+
 </ion-content>

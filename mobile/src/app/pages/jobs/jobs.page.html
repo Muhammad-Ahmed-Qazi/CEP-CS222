@@ -1,17 +1,96 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Jobs
-    </ion-title>
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>My Print Jobs</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Jobs</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content class="ion-padding">
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
 
-  <app-explore-container name="Jobs page"></app-explore-container>
+  <div *ngIf="isLoading">
+    <ion-card *ngFor="let i of [1,2,3]">
+      <ion-card-header>
+        <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
+        <ion-skeleton-text animated style="width: 40%"></ion-skeleton-text>
+      </ion-card-header>
+    </ion-card>
+  </div>
+
+  <div class="empty-state ion-text-center ion-padding" *ngIf="!isLoading && jobs.length === 0">
+    <ion-icon name="document-text-outline" style="font-size: 64px; color: #ccc;"></ion-icon>
+    <h3>No Print Jobs</h3>
+    <p>Submit a document to see it here.</p>
+    <ion-button routerLink="/tabs/submit" fill="clear">Submit a Job</ion-button>
+  </div>
+
+  <ion-list *ngIf="!isLoading && jobs.length > 0">
+    <ion-card *ngFor="let job of jobs" (click)="openJobDetail(job)" class="ion-activatable ripple-parent">
+      <ion-ripple-effect></ion-ripple-effect>
+      <ion-card-header>
+        <ion-card-subtitle class="job-meta">
+          <span>{{ job.JOB_TYPE | titlecase }} Job</span>
+          <ion-badge [color]="getStatusColor(job.STATUS_NAME)">{{ job.STATUS_NAME }}</ion-badge>
+        </ion-card-subtitle>
+        <ion-card-title>ID: {{ job.JOB_ID }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item lines="none" class="ion-no-padding">
+          <ion-icon name="copy-outline" slot="start" color="medium"></ion-icon>
+          <ion-label>
+            <p>Pages: {{ job.PAGE_COUNT }}</p>
+            <p>Submitted: {{ job.SUBMISSION_TIME | date:'medium' }}</p>
+          </ion-label>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+  </ion-list>
+
+  <ion-modal [isOpen]="isModalOpen" (didDismiss)="closeModal()" (didPresent)="renderQR()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Job Details</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeModal()">Close</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding ion-text-center">
+        <ng-container *ngIf="selectedJob">
+          <h2>Job ID: {{ selectedJob.JOB_ID }}</h2>
+          <ion-badge [color]="getStatusColor(selectedJob.STATUS_NAME)" class="ion-margin-bottom">
+            {{ selectedJob.STATUS_NAME }}
+          </ion-badge>
+
+          <div class="qr-container" *ngIf="selectedJob.STATUS_NAME === 'Pending'">
+            <p>Scan to print securely:</p>
+            <canvas #qrCanvas></canvas>
+          </div>
+
+          <ion-list class="ion-margin-top ion-text-left">
+            <ion-item>
+              <ion-label>
+                <h3>Document Path</h3>
+                <p>{{ selectedJob.DOCUMENT }}</p>
+              </ion-label>
+            </ion-item>
+            <ion-item>
+              <ion-label>
+                <h3>Priority Level</h3>
+                <p>{{ selectedJob.PRIORITY_LEVEL }}</p>
+              </ion-label>
+            </ion-item>
+            <ion-item *ngIf="selectedJob.SUBMISSION_TIME">
+              <ion-label>
+                <h3>Submitted</h3>
+                <p>{{ selectedJob.SUBMISSION_TIME | date:'medium' }}</p>
+              </ion-label>
+            </ion-item>
+          </ion-list>
+        </ng-container>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
 </ion-content>
