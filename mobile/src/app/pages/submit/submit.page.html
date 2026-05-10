@@ -1,17 +1,92 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Submit
-    </ion-title>
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Submit Print Job</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Submit</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content class="ion-padding">
+  <!-- Input Form: Hidden if Job is already submitted and QR is showing -->
+  <ion-card *ngIf="!submittedJob">
+    <ion-card-header>
+      <ion-card-title>Job Details</ion-card-title>
+    </ion-card-header>
 
-  <app-explore-container name="Submit page"></app-explore-container>
+    <ion-card-content>
+      <form [formGroup]="submitForm" (ngSubmit)="onSubmit()">
+        
+        <!-- File Picker -->
+        <div class="file-container ion-margin-bottom">
+          <input type="file" #fileInput (change)="onFileSelected($event)" accept="application/pdf" style="display: none">
+          <ion-button expand="block" fill="outline" (click)="fileInput.click()">
+            <ion-icon name="document-attach-outline" slot="start"></ion-icon>
+            Select PDF
+          </ion-button>
+          <ion-item lines="none" *ngIf="selectedFile">
+            <ion-label color="success">
+              <ion-icon name="checkmark-circle"></ion-icon> {{ selectedFile.name }}
+            </ion-label>
+          </ion-item>
+        </div>
+
+        <!-- Job Type -->
+        <ion-item lines="full">
+          <ion-label position="stacked">Job Type</ion-label>
+          <ion-select formControlName="jobType" placeholder="Select Type">
+            <ion-select-option value="normal">Normal</ion-select-option>
+            <ion-select-option value="bulk">Bulk</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <!-- Page Count -->
+        <ion-item lines="full">
+          <ion-label position="stacked">Total Pages</ion-label>
+          <ion-input type="number" formControlName="pageCount" placeholder="0"></ion-input>
+        </ion-item>
+
+        <!-- Scheduled Time (Optional) -->
+        <ion-item lines="full">
+          <ion-label position="stacked">Schedule Time (Optional)</ion-label>
+          <ion-datetime-button datetime="datetime"></ion-datetime-button>
+          <ion-modal [keepContentsMounted]="true">
+            <ng-template>
+              <ion-datetime id="datetime" formControlName="scheduledTime"></ion-datetime>
+            </ng-template>
+          </ion-modal>
+        </ion-item>
+
+        <ion-button expand="block" type="submit" [disabled]="submitForm.invalid || !selectedFile" class="ion-margin-top">
+          Submit for Printing
+        </ion-button>
+      </form>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Success View: Show QR Code -->
+  <ion-card *ngIf="submittedJob" class="ion-text-center">
+    <ion-card-header>
+      <ion-card-title>Job Submitted!</ion-card-title>
+      <ion-card-subtitle>Job ID: {{ submittedJob.jobId }}</ion-card-subtitle>
+    </ion-card-header>
+
+    <ion-card-content>
+      <p>Scan this at any campus printer:</p>
+      <div class="qr-container ion-margin-vertical">
+        <canvas #qrCanvas></canvas>
+      </div>
+      
+      <ion-item lines="none">
+        <ion-label>
+          <h2>Estimated Completion</h2>
+          <p>{{ submittedJob.estimatedTime }} minutes</p>
+        </ion-label>
+      </ion-item>
+
+      <ion-button expand="block" fill="clear" (click)="goToJobsList()">
+        View All Jobs
+      </ion-button>
+      <ion-button expand="block" color="medium" (click)="resetForm()">
+        Submit Another
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
 </ion-content>
