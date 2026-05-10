@@ -101,4 +101,31 @@ export class AuthService {
       await conn.close();
     }
   }
+
+  async getFullProfile(userId: number) {
+    const conn = await this.db.getConnection();
+    try {
+      const sql = `
+        SELECT 
+          u.User_ID as "userId", 
+          u.First_Name as "firstName", 
+          u.Last_Name as "lastName", 
+          u.Email as "email", 
+          n.Account_balance as "accountBalance"
+        FROM APP_USER u
+        LEFT JOIN NORMAL_USER n ON u.User_ID = n.User_ID
+        WHERE u.User_ID = :userId
+      `;
+
+      const result = await conn.execute(
+        sql, 
+        { userId }, 
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      return result.rows?.[0];
+    } finally {
+      await conn.close();
+    }
+  }
 }

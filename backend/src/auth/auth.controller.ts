@@ -26,6 +26,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getProfile(@Request() req) {
-    return req.user; // In a real scenario, fetch joined data from DB here
+    // Use the service to fetch the joined data from the DB
+    return await this.authService.getFullProfile(req.user.userId);
   }
 }

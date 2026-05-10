@@ -19,7 +19,7 @@ const routes: Routes = [
   {
     path: 'tabs',
     loadChildren: () => import('./tabs/tabs.module').then(m => m.TabsPageModule),
-    // canActivate: [AuthGuard] // This protects the entire tabs section
+    canActivate: [AuthGuard] // This protects the entire tabs section
   },
   // Catch-all: redirect any unknown paths to login
   // {

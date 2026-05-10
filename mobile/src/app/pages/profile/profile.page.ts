@@ -9,7 +9,7 @@ export interface UserProfile {
   lastName: string;
   email: string;
   role: string;
-  accountBalance: number;
+  accountBalance: number; // Matches "accountBalance" alias in SQL
 }
 
 export interface Transaction {
@@ -18,7 +18,7 @@ export interface Transaction {
   transactionDate: string;
   transactionType: string;
   userId: number;
-  jobId: number | null;
+  jobId: number | null; // Matches "jobId" alias in SQL
 }
 
 @Component({
@@ -44,21 +44,24 @@ export class ProfilePage implements OnInit {
   }
 
   ionViewWillEnter() {
-    // Refresh balance and history when returning to tab
-    if (!this.isLoading) this.loadData();
+    // Force a refresh when the tab becomes active
+    this.loadData();
   }
 
   loadData() {
     this.isLoading = true;
     
-    // Fetch Profile
+    // Fetch Profile from /auth/me
     this.api.get<UserProfile>('/auth/me').subscribe({
       next: (res) => {
+        // Log to verify exact field names and casing (e.g., accountBalance vs ACCOUNT_BALANCE)
+        console.log('Full Profile Response from /auth/me:', res); 
         this.profile = res;
-        this.loadTransactions(); // Chain load to ensure sequential logic
+        this.loadTransactions(); 
       },
       error: (err) => {
         this.isLoading = false;
+        console.error('Profile fetch error:', err);
         this.showToast('Failed to load profile data', 'danger');
       }
     });
@@ -67,6 +70,7 @@ export class ProfilePage implements OnInit {
   loadTransactions() {
     this.api.get<Transaction[]>('/transactions').subscribe({
       next: (res) => {
+        console.log('Transactions received:', res);
         this.transactions = res;
         this.isLoading = false;
       },
@@ -100,7 +104,7 @@ export class ProfilePage implements OnInit {
               return true;
             } else {
               this.showToast('Please enter a valid amount.', 'warning');
-              return false; // Keep alert open
+              return false; 
             }
           }
         }
@@ -111,9 +115,10 @@ export class ProfilePage implements OnInit {
 
   processTopUp(amount: number) {
     this.api.post<any>('/transactions/topup', { amount }).subscribe({
-      next: () => {
+      next: (res) => {
         this.showToast(`Successfully added PKR ${amount} to balance.`, 'success');
-        this.loadData(); // Reload profile and transactions
+        // This triggers loadData which refreshes both profile balance and transactions
+        this.loadData(); 
       },
       error: (err) => {
         this.showToast(err?.error?.message || 'Top up failed.', 'danger');

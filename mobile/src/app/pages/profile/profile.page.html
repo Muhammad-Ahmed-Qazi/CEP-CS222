@@ -25,14 +25,20 @@
       <ion-badge color="medium">{{ profile.role | uppercase }}</ion-badge>
     </div>
 
-    <ion-card class="balance-card ion-margin-bottom">
-      <ion-card-header>
-        <ion-card-subtitle>Current Balance</ion-card-subtitle>
-        <ion-card-title class="balance-amount">PKR {{ profile.accountBalance | number:'1.2-2' }}</ion-card-title>
-      </ion-card-header>
-      <ion-card-content>
-        <ion-button expand="block" (click)="presentTopUpPrompt()">
-          <ion-icon name="wallet-outline" slot="start"></ion-icon>
+    <ion-card class="balance-card">
+      <ion-card-content class="ion-text-center">
+        <ion-text color="medium">
+          <p>Available Balance</p>
+        </ion-text>
+
+        <!-- Displaying PKR with 2 decimal places -->
+        <h1 class="balance-amount" style="font-size: 2.5rem; font-weight: 700; color: var(--ion-color-primary);">
+          {{ (profile.accountBalance || 0) | number:'1.2-2' }}
+          <small style="font-size: 1rem; color: var(--ion-color-step-600);">PKR</small>
+        </h1>
+
+        <ion-button expand="block" fill="outline" class="ion-margin-top" (click)="presentTopUpPrompt()">
+          <ion-icon name="add-circle-outline" slot="start"></ion-icon>
           Top Up Balance
         </ion-button>
       </ion-card-content>

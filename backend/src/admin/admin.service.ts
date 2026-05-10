@@ -69,29 +69,42 @@ export class AdminService {
     }
   }
 
-  async getUsers(search?: string) {
+  async getUsers() {
     const conn = await this.dbService.getConnection();
     try {
-      let sql = `
-        SELECT au.User_ID as "userId", au.First_Name as "firstName", au.Last_Name as "lastName", 
-               au.Email as "email", au.Role as "role", nu.Account_balance as "accountBalance",
-               s.Major as "major", f.Department as "department"
+      const sql = `
+        SELECT 
+          au.USER_ID as "userId",
+          au.FIRST_NAME as "firstName",
+          au.LAST_NAME as "lastName",
+          au.EMAIL as "email",
+          -- Logic to determine role based on table existence
+          CASE 
+            WHEN adm.USER_ID IS NOT NULL THEN 'admin'
+            WHEN fac.USER_ID IS NOT NULL THEN 'faculty'
+            WHEN stu.USER_ID IS NOT NULL THEN 'student'
+            WHEN nu.USER_ID IS NOT NULL THEN 'normal'
+            ELSE 'guest'
+          END as "role",
+          nu.ACCOUNT_BALANCE as "accountBalance"
         FROM APP_USER au
-        LEFT JOIN NORMAL_USER nu ON au.User_ID = nu.User_ID
-        LEFT JOIN STUDENT s ON au.User_ID = s.User_ID
-        LEFT JOIN FACULTY f ON au.User_ID = f.User_ID
+        LEFT JOIN ADMIN adm ON au.USER_ID = adm.USER_ID
+        LEFT JOIN NORMAL_USER nu ON au.USER_ID = nu.USER_ID
+        LEFT JOIN FACULTY fac ON au.USER_ID = fac.USER_ID
+        LEFT JOIN STUDENT stu ON au.USER_ID = stu.USER_ID
+        ORDER BY au.USER_ID ASC
       `;
-      const binds: any = {};
-      if (search) {
-        sql += ` WHERE LOWER(au.First_Name) LIKE :search 
-                 OR LOWER(au.Last_Name) LIKE :search 
-                 OR LOWER(au.Email) LIKE :search`;
-        binds.search = `%${search.toLowerCase()}%`;
-      }
-      const result = await conn.execute(sql, binds, {
-        outFormat: oracledb.OUT_FORMAT_OBJECT,
-      });
-      return result.rows;
+
+      const result = await conn.execute(
+        sql,
+        {},
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      return result.rows || [];
+    } catch (err) {
+      console.error('Error fetching users with roles:', err);
+      throw err;
     } finally {
       await conn.close();
     }

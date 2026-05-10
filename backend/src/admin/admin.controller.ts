@@ -31,8 +31,8 @@ export class AdminController {
   }
 
   @Get('users')
-  async getUsers(@Query('search') search?: string) {
-    return this.adminService.getUsers(search);
+  async getUsers() {
+    return this.adminService.getUsers();
   }
 
   @Delete('users/:id')
