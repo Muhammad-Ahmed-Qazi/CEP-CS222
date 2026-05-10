@@ -48,8 +48,8 @@ export class JobsService {
       // 3. Insert PRINT_JOB
       const jobInsert = await conn.execute(
         `INSERT INTO PRINT_JOB (Document, Page_count, QR_Secure_Token, Priority_level, job_type, scheduled_time) 
-         VALUES (:p_doc, :p_pc, :p_qr, :p_pri, :p_type, :p_time) 
-         RETURNING Job_Id INTO :p_out_id`,
+        VALUES (:p_doc, :p_pc, :p_qr, :p_pri, :p_type, :p_time) 
+        RETURNING Job_Id INTO :p_out_id`,
         {
           p_doc: file.path,
           p_pc: pageCount,
@@ -90,26 +90,34 @@ export class JobsService {
         { p_cost: totalCost, p_uid: userId },
       );
 
-      // 8. Financial Transaction Record (Simplified to match your table)
+      // 8. Financial Transaction Record (UPDATED with User_ID and transaction_type)
       const txInsert = await conn.execute(
-        `INSERT INTO FINANCIAL_TRANSACTION (Amount, Transaction_date) 
-        VALUES (:p_amt, CURRENT_TIMESTAMP) 
-        RETURNING Transaction_ID INTO :p_out_tx`,
+        `INSERT INTO FINANCIAL_TRANSACTION (
+          Amount, 
+          Transaction_date, 
+          User_ID, 
+          transaction_type
+        ) VALUES (
+          :p_amt, 
+          CURRENT_TIMESTAMP, 
+          :p_uid, 
+          'deduction'
+        ) RETURNING Transaction_ID INTO :p_out_tx`,
         {
           p_amt: totalCost,
+          p_uid: userId,
           p_out_tx: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
         },
       );
       const txId = (txInsert.outBinds as any).p_out_tx[0];
 
-      // 9. Link Job to Transaction (GENERATES) - This is where the connection happens!
-      // Ensure your table uses "Job_Id" or "Job_ID" (Check casing in SQL Developer)
+      // 9. Link Job to Transaction (GENERATES)
       await conn.execute(
         `INSERT INTO GENERATES (Job_Id, Transaction_ID) VALUES (:p_jid, :p_txid)`,
         { p_jid: jobId, p_txid: txId },
       );
 
-      return { jobId, qrToken, estimatedTime: '5-10 minutes' };
+      return { jobId, qrToken, totalCost, estimatedTime: '5-10 minutes' };
     });
   }
 

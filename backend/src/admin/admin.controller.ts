@@ -1,27 +1,42 @@
-import { Controller, Get, Patch, Delete, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Delete,
+  Query,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('jobs')
-  getJobs(): string {
-    return this.adminService.getJobs();
+  async getJobs(@Query('status') status?: string) {
+    return this.adminService.getAllJobs(status);
   }
 
   @Patch('jobs/:id/handover')
-  handoverJob(@Param('id') id: string): string {
-    return this.adminService.handoverJob(id);
+  async handover(
+    @Param('id') id: string,
+    @Body() body: { kioskId: string; binId: string },
+  ) {
+    return this.adminService.confirmHandover(id, body.kioskId, body.binId);
   }
 
   @Get('users')
-  getUsers(): string {
-    return this.adminService.getUsers();
+  async getUsers(@Query('search') search?: string) {
+    return this.adminService.getUsers(search);
   }
 
   @Delete('users/:id')
-  deleteUser(@Param('id') id: string): string {
+  async deleteUser(@Param('id') id: string) {
     return this.adminService.deleteUser(id);
   }
 }

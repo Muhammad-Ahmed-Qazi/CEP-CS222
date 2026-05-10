@@ -16,6 +16,9 @@ export interface Transaction {
   transactionId: string;
   amount: number;
   transactionDate: string;
+  transactionType: string;
+  userId: number;
+  jobId: number | null;
 }
 
 @Component({

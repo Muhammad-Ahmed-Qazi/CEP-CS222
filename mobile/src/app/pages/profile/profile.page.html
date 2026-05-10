@@ -10,7 +10,7 @@
 </ion-header>
 
 <ion-content class="ion-padding">
-  
+
   <div *ngIf="isLoading" class="ion-text-center ion-padding">
     <ion-spinner name="crescent"></ion-spinner>
   </div>
@@ -48,17 +48,19 @@
       </div>
 
       <ion-item *ngFor="let txn of transactions">
-        <ion-icon 
-          [name]="txn.amount > 0 ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'" 
-          [color]="txn.amount > 0 ? 'success' : 'danger'" 
-          slot="start">
+        <ion-icon [name]="txn.transactionType === 'topup' ? 'wallet-outline' : 'print-outline'"
+          [color]="txn.transactionType === 'topup' ? 'success' : 'danger'" slot="start">
         </ion-icon>
+
         <ion-label>
-          <h3>{{ txn.amount > 0 ? 'Top Up' : 'Printing Deduction' }}</h3>
+          <h3>
+            {{ txn.transactionType === 'topup' ? 'Balance Top Up' : 'Print Job #' + (txn.jobId || 'N/A') }}
+          </h3>
           <p>{{ txn.transactionDate | date:'medium' }}</p>
         </ion-label>
-        <ion-note slot="end" [color]="txn.amount > 0 ? 'success' : 'danger'">
-          {{ txn.amount > 0 ? '+' : '' }}{{ txn.amount | number:'1.2-2' }}
+
+        <ion-note slot="end" [color]="txn.transactionType === 'topup' ? 'success' : 'danger'">
+          {{ txn.transactionType === 'topup' ? '+' : '-' }}{{ txn.amount | number:'1.2-2' }} PKR
         </ion-note>
       </ion-item>
     </ion-list>

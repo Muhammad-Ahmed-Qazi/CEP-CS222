@@ -6,6 +6,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DbModule } from './db/db.module';
 import { JobsModule } from './jobs/jobs.module';
+import { TransactionsModule } from './transactions/transactions.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { JobsModule } from './jobs/jobs.module';
     DbModule,
     AuthModule,
     JobsModule,
+    TransactionsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService, DbService],

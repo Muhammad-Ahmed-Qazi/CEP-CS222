@@ -1,17 +1,30 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  BadRequestException,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TransactionsService } from './transactions.service';
 
 @Controller('transactions')
+@UseGuards(JwtAuthGuard)
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
   @Get()
-  getTransactions(): string {
-    return this.transactionsService.getTransactions();
+  async getHistory(@Request() req) {
+    return this.transactionsService.getHistory(req.user.userId);
   }
 
   @Post('topup')
-  topupBalance(): string {
-    return this.transactionsService.topupBalance();
+  async topUp(@Request() req, @Body() body: { amount: number }) {
+    if (body.amount <= 0 || body.amount > 10000) {
+      throw new BadRequestException('Amount must be between 1 and 10,000');
+    }
+    return this.transactionsService.topUp(req.user.userId, body.amount);
   }
 }
