@@ -1,0 +1,96 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/login"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Create Account</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+    
+    <ion-item lines="full">
+      <ion-label position="floating">First Name</ion-label>
+      <ion-input type="text" formControlName="firstName"></ion-input>
+    </ion-item>
+    <div class="error-message" *ngIf="registerForm.get('firstName')?.touched && registerForm.get('firstName')?.invalid">
+      <span>First name is required.</span>
+    </div>
+
+    <ion-item lines="full">
+      <ion-label position="floating">Last Name</ion-label>
+      <ion-input type="text" formControlName="lastName"></ion-input>
+    </ion-item>
+    <div class="error-message" *ngIf="registerForm.get('lastName')?.touched && registerForm.get('lastName')?.invalid">
+      <span>Last name is required.</span>
+    </div>
+
+    <ion-item lines="full">
+      <ion-label position="floating">Email</ion-label>
+      <ion-input type="email" formControlName="email"></ion-input>
+    </ion-item>
+    <div class="error-message" *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.invalid">
+      <span *ngIf="registerForm.get('email')?.errors?.['required']">Email is required.</span>
+      <span *ngIf="registerForm.get('email')?.errors?.['email']">Enter a valid email format.</span>
+    </div>
+
+    <ion-item lines="full">
+      <ion-label position="floating">Password</ion-label>
+      <ion-input type="password" formControlName="password"></ion-input>
+    </ion-item>
+    <div class="error-message" *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid">
+      <span *ngIf="registerForm.get('password')?.errors?.['required']">Password is required.</span>
+      <span *ngIf="registerForm.get('password')?.errors?.['minlength']">Minimum 6 characters.</span>
+    </div>
+
+    <ion-item lines="full" class="ion-margin-top">
+      <ion-label>Role</ion-label>
+      <ion-select formControlName="role" placeholder="Select Role">
+        <ion-select-option value="student">Student</ion-select-option>
+        <ion-select-option value="faculty">Faculty</ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ng-container *ngIf="registerForm.get('role')?.value === 'student'">
+      <ion-item lines="full">
+        <ion-label position="floating">Major</ion-label>
+        <ion-input type="text" formControlName="major"></ion-input>
+      </ion-item>
+      <div class="error-message" *ngIf="registerForm.get('major')?.touched && registerForm.get('major')?.invalid">
+        <span>Major is required.</span>
+      </div>
+
+      <ion-item lines="full">
+        <ion-label position="floating">Batch Year</ion-label>
+        <ion-input type="number" formControlName="studentBatch"></ion-input>
+      </ion-item>
+      <div class="error-message" *ngIf="registerForm.get('studentBatch')?.touched && registerForm.get('studentBatch')?.invalid">
+        <span>Batch year is required.</span>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="registerForm.get('role')?.value === 'faculty'">
+      <ion-item lines="full">
+        <ion-label position="floating">Department</ion-label>
+        <ion-input type="text" formControlName="department"></ion-input>
+      </ion-item>
+      <div class="error-message" *ngIf="registerForm.get('department')?.touched && registerForm.get('department')?.invalid">
+        <span>Department is required.</span>
+      </div>
+
+      <ion-item lines="full">
+        <ion-label position="floating">Rank</ion-label>
+        <ion-input type="text" formControlName="facultyRank"></ion-input>
+      </ion-item>
+      <div class="error-message" *ngIf="registerForm.get('facultyRank')?.touched && registerForm.get('facultyRank')?.invalid">
+        <span>Rank is required.</span>
+      </div>
+    </ng-container>
+
+    <ion-button expand="block" type="submit" [disabled]="registerForm.invalid || isLoading" class="ion-margin-top">
+      <ion-spinner *ngIf="isLoading" name="crescent"></ion-spinner>
+      <span *ngIf="!isLoading">Register</span>
+    </ion-button>
+  </form>
+</ion-content>

@@ -1,0 +1,41 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Login</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="form-container">
+    <div class="logo-placeholder">
+      <h2>Smart Campus Printing</h2>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <ion-item lines="full">
+        <ion-label position="floating">Email</ion-label>
+        <ion-input type="email" formControlName="email" placeholder="Enter your campus email"></ion-input>
+      </ion-item>
+      <div class="error-message" *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.invalid">
+        <span *ngIf="loginForm.get('email')?.errors?.['required']">Email is required.</span>
+        <span *ngIf="loginForm.get('email')?.errors?.['email']">Enter a valid email format.</span>
+      </div>
+
+      <ion-item lines="full">
+        <ion-label position="floating">Password</ion-label>
+        <ion-input type="password" formControlName="password" placeholder="Enter your password"></ion-input>
+      </ion-item>
+      <div class="error-message" *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid">
+        <span *ngIf="loginForm.get('password')?.errors?.['required']">Password is required.</span>
+      </div>
+
+      <ion-button expand="block" type="submit" [disabled]="loginForm.invalid || isLoading" class="ion-margin-top">
+        <ion-spinner *ngIf="isLoading" name="crescent"></ion-spinner>
+        <span *ngIf="!isLoading">Login</span>
+      </ion-button>
+    </form>
+
+    <div class="ion-text-center ion-margin-top">
+      <p>Don't have an account? <a routerLink="/register">Register here</a></p>
+    </div>
+  </div>
+</ion-content>

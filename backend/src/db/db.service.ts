@@ -12,7 +12,9 @@ export class DbService {
   }
 
   // Add this method to fix error TS2339
-  async executeInTransaction<T>(callback: (conn: oracledb.Connection) => Promise<T>): Promise<T> {
+  async executeInTransaction<T>(
+    callback: (conn: oracledb.Connection) => Promise<T>,
+  ): Promise<T> {
     const conn = await this.getConnection();
     try {
       const result = await callback(conn);
