@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PrintDataService } from '../../services/print-data.service';
@@ -10,9 +10,44 @@ import { PrintDataService } from '../../services/print-data.service';
   templateUrl: './queue.html',
   styleUrl: './queue.css',
 })
-export class Queue {
+export class Queue implements OnInit {
 
   constructor(private dataService: PrintDataService) {}
+
+
+
+
+
+
+
+ngOnInit() {
+  setInterval(() => {
+
+    const randomStatuses = ['Pending', 'Printing', 'Completed'];
+
+    const randomJob = this.jobs[
+      Math.floor(Math.random() * this.jobs.length)
+    ];
+
+    randomJob.status =
+      randomStatuses[Math.floor(Math.random() * randomStatuses.length)];
+
+  }, 5000);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   searchText = '';
   selectedStatus = 'All';

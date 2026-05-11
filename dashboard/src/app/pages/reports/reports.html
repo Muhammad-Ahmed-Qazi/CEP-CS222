@@ -25,7 +25,27 @@
     <h3>Completed</h3>
     <p>{{ completedJobs }}</p>
   </div>
+<div class="card">
+  <h2>Daily Transaction Totals</h2>
 
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Total Jobs</th>
+        <th>Revenue (PKR)</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let day of dailyTransactions">
+        <td>{{ day.date }}</td>
+        <td>{{ day.jobs }}</td>
+        <td>Rs. {{ day.revenue }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 </div>
 
 </div>

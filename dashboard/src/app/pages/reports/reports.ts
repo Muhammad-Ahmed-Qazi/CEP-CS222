@@ -11,6 +11,23 @@ import { PrintDataService } from '../../services/print-data.service';
 })
 export class Reports {
 
+  dailyTransactions = [
+  {
+    date: '2026-05-06',
+    jobs: 24,
+    revenue: 4800
+  },
+  {
+    date: '2026-05-07',
+    jobs: 31,
+    revenue: 6200
+  },
+  {
+    date: '2026-05-08',
+    jobs: 18,
+    revenue: 3900
+  }
+];
   constructor(private dataService: PrintDataService) {}
 
   get jobs() {

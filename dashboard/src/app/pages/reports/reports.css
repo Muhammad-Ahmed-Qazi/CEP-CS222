@@ -1,5 +1,6 @@
 .title {
   margin-bottom: 20px;
+  color: black;
 }
 
 .grid {
@@ -50,4 +51,11 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+.card {
+  margin-bottom: 20px;
+  
+}
+.card td {
+  color: #111827;
 }
