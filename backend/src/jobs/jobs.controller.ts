@@ -8,6 +8,8 @@ import {
   UploadedFile,
   Request,
   Param,
+  Delete,
+  Patch,
   ParseIntPipe,
   BadRequestException,
 } from '@nestjs/common';
@@ -99,5 +101,20 @@ export class JobsController {
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return this.jobsService.findOne(id, req.user.userId);
+  }
+
+  @Delete(':id')
+  async cancelJob(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.jobsService.cancelJob(id, req.user.userId);
+  }
+
+  @Post(':id/reprint')
+  async reprintJob(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('collectionSlot') collectionSlot: string,
+    @Request() req
+  ) {
+    if (!collectionSlot) throw new BadRequestException('collectionSlot is required for reprinting');
+    return this.jobsService.reprintJob(id, req.user.userId, collectionSlot);
   }
 }
