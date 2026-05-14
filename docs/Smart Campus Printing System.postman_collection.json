@@ -1,0 +1,1114 @@
+{
+  "info": {
+    "_postman_id": "b8076a87-5d0e-472f-8e90-944564de23af",
+    "name": "Smart Campus Printing System",
+    "description": "API Contract for the CS-222 Printing Management System.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "36436295"
+  },
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"email\": \"test@test.com\",\n  \"password\": \"test123\",\n  \"role\": \"student\",\n  \"major\": \"Computer Systems\",\n  \"studentBatch\": \"2024\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"email\": \"test@test.com\",\n  \"password\": \"test123\",\n  \"role\": \"student\",\n  \"major\": \"Computer Systems\",\n  \"studentBatch\": \"2024\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "register"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"message\": \"User registered successfully\",\n  \"userId\": 101\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"password\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"expiresIn\": 3600\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Profile (Me)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiYWhtZWRAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODIyNDQ1MSwiZXhwIjoxNzc4MjI4MDUxfQ.T0R9YzXdldcSz8GvQWOsP31fjw7jNWk7Lf-mZAGKnL8",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiYWhtZWRAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODIyNDQ1MSwiZXhwIjoxNzc4MjI4MDUxfQ.T0R9YzXdldcSz8GvQWOsP31fjw7jNWk7Lf-mZAGKnL8",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwt_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "me"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"userId\": 101,\n  \"firstName\": \"Muhammad\",\n  \"email\": \"qazi.m@campus.edu.pk\",\n  \"role\": \"STUDENT\",\n  \"balance\": 500.00\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiYWhtZWRAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY3NzY1NCwiZXhwIjoxNzc4NjgxMjU0fQ.0U2rzURV77-khk-_ho_LRP73tjYS1jTuc6Sxyfj8bfI",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"firstName\": \"Muhammad Ahmed\", \"lastName\": \"Qazi\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Password",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiYWhtZWRAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY3NzY1NCwiZXhwIjoxNzc4NjgxMjU0fQ.0U2rzURV77-khk-_ho_LRP73tjYS1jTuc6Sxyfj8bfI",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"currentPassword\": \"test1234\", \"newPassword\": \"newpass123\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile Image",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiYWhtZWRAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY4MDM0NCwiZXhwIjoxNzc4NjgzOTQ0fQ.SbdY4v2jw2Gts-7cA3isYMfyVszfDe3FkNSERlvyCj8",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "d70cfa67-ca7a-4cb0-adc4-7b725ab14571",
+                  "src": "/home/qaziiam/Pictures/Profile Images/Muhammad Ahmed Qazi 2.png"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile-picture",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "profile-picture"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjY2LCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY4NDM1MCwiZXhwIjoxNzc4Njg3OTUwfQ.alhYaRRhj309kmFx-fmjHvqXrOeaqsmQsYWOqKZJA1s",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Jobs (User)",
+      "item": [
+        {
+          "name": "Submit Print Job",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjY2LCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY4NDM1MCwiZXhwIjoxNzc4Njg3OTUwfQ.alhYaRRhj309kmFx-fmjHvqXrOeaqsmQsYWOqKZJA1s",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/home/qaziiam/Documents/Blank Page.pdf"
+                },
+                {
+                  "key": "jobType",
+                  "value": "normal",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Testing...",
+                  "type": "text",
+                  "uuid": "19b3d225-541b-4ae4-b90d-ba5f08b40c0c"
+                },
+                {
+                  "key": "copies",
+                  "value": "2",
+                  "type": "text",
+                  "uuid": "971550ad-8dd7-4c24-a3ef-74b420d5733a"
+                },
+                {
+                  "key": "printMode",
+                  "value": "bw",
+                  "type": "text",
+                  "uuid": "914e1a41-ac7f-45e7-a663-c7447d1e1af8"
+                },
+                {
+                  "key": "printSide",
+                  "value": "single",
+                  "type": "text",
+                  "uuid": "c203ec42-f6c5-4711-9169-61cdfb4f797e"
+                },
+                {
+                  "key": "collectionSlot",
+                  "value": "2026-05-14T10:00:00.000Z",
+                  "type": "text",
+                  "uuid": "c4e861d8-19e6-4b56-927e-18e18948be5f"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jobs"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Created",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjY2LCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY4NDM1MCwiZXhwIjoxNzc4Njg3OTUwfQ.alhYaRRhj309kmFx-fmjHvqXrOeaqsmQsYWOqKZJA1s",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwt_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "/home/qaziiam/Documents/Blank Page.pdf"
+                    },
+                    {
+                      "key": "jobType",
+                      "value": "normal",
+                      "type": "text"
+                    },
+                    {
+                      "key": "description",
+                      "value": "Testing...",
+                      "type": "text",
+                      "uuid": "19b3d225-541b-4ae4-b90d-ba5f08b40c0c"
+                    },
+                    {
+                      "key": "copies",
+                      "value": "2",
+                      "type": "text",
+                      "uuid": "971550ad-8dd7-4c24-a3ef-74b420d5733a"
+                    },
+                    {
+                      "key": "printMode",
+                      "value": "bw",
+                      "type": "text",
+                      "uuid": "914e1a41-ac7f-45e7-a663-c7447d1e1af8"
+                    },
+                    {
+                      "key": "printSide",
+                      "value": "single",
+                      "type": "text",
+                      "uuid": "c203ec42-f6c5-4711-9169-61cdfb4f797e"
+                    },
+                    {
+                      "key": "collectionSlot",
+                      "value": "2026-05-14T10:00:00.000Z",
+                      "type": "text",
+                      "uuid": "c4e861d8-19e6-4b56-927e-18e18948be5f"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/jobs",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "jobs"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"jobId\": 5042,\n  \"status\": \"PENDING\",\n  \"estimatedCost\": 75.00\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Job Details & QR",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiYWhtZWRAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODI0ODA2NiwiZXhwIjoxNzc4MjUxNjY2fQ.6rolh-c2gWXsM6wIPny5Hcf6_iUwkji1Dz56xPCok3k",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jobs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jobs"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiYWhtZWRAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODI0ODA2NiwiZXhwIjoxNzc4MjUxNjY2fQ.6rolh-c2gWXsM6wIPny5Hcf6_iUwkji1Dz56xPCok3k",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwt_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/jobs",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "jobs"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"jobId\": 5042,\n  \"status\": \"COMPLETED\",\n  \"binId\": \"B4\",\n  \"qrToken\": \"campus-print-secure-token-8f92a\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Admin Operations",
+      "item": [
+        {
+          "name": "Handover Job (Deduct Points)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qrToken\": \"campus-print-secure-token-8f92a\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/jobs/5042/handover/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "jobs",
+                "5042",
+                "handover",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "62"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"qrToken\": \"campus-print-secure-token-8f92a\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/admin/jobs/5042/handover/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "jobs",
+                    "5042",
+                    "handover",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "62"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Handover authorised. 75.00 PKR deducted.\",\n  \"newBalance\": 425.00\n}"
+            }
+          ]
+        },
+        {
+          "name": "Queue Table",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjQyLCJlbWFpbCI6ImFkbWluQHRlc3QuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc4NjQ1NjkwLCJleHAiOjE3Nzg2NDkyOTB9.9A7MPc720lR_mQtbYQfQhV6aXOfFxXF2NPRVYZ-qbBo",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/jobs/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "jobs",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Management",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjQyLCJlbWFpbCI6ImFkbWluQHRlc3QuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc4NDI2MTE4LCJleHAiOjE3Nzg0Mjk3MTh9.Hu_yLHbjGNSRTcCf-tAqDwP0voIq1P1U7xIi-f4_D9I",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Operator",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjQyLCJlbWFpbCI6ImFkbWluQHRlc3QuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc4Njg0OTk2LCJleHAiOjE3Nzg2ODg1OTZ9.flCQ78rSS8ZV6ypRgG7gt_BVbb9h7xsuTTWqn3CUI1A",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"Operator\",\n  \"email\": \"operator@test.com\",\n  \"password\": \"test1234\",\n  \"assignedKiosk\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/operators",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "operators"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "All Operators",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjQyLCJlbWFpbCI6ImFkbWluQHRlc3QuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc4Njg0OTk2LCJleHAiOjE3Nzg2ODg1OTZ9.flCQ78rSS8ZV6ypRgG7gt_BVbb9h7xsuTTWqn3CUI1A",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/operators",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "operators"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Transactions",
+      "item": [
+        {
+          "name": "Top-up Balance",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjY2LCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY4NDM1MCwiZXhwIjoxNzc4Njg3OTUwfQ.alhYaRRhj309kmFx-fmjHvqXrOeaqsmQsYWOqKZJA1s",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/transactions/topup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transactions",
+                "topup"
+              ]
+            },
+            "description": "Adds balance to the user account in PKR."
+          },
+          "response": []
+        },
+        {
+          "name": "Transaction History",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiYWhtZWRAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY0NTc0NywiZXhwIjoxNzc4NjQ5MzQ3fQ.M0d3LjFdsAOgSRhaOS6oI8Hx1ametK2kep-tcwqBc6A",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transactions"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Reports",
+      "item": [
+        {
+          "name": "User Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjQyLCJlbWFpbCI6ImFkbWluQHRlc3QuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc4Njg0OTk2LCJleHAiOjE3Nzg2ODg1OTZ9.flCQ78rSS8ZV6ypRgG7gt_BVbb9h7xsuTTWqn3CUI1A",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/user-summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "user-summary"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Daily Report",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiYWhtZWRAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY0NTc0NywiZXhwIjoxNzc4NjQ5MzQ3fQ.M0d3LjFdsAOgSRhaOS6oI8Hx1ametK2kep-tcwqBc6A",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/daily",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "daily"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjQyLCJlbWFpbCI6ImFkbWluQHRlc3QuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc4NDI2NDI4LCJleHAiOjE3Nzg0MzAwMjh9.sS2uexj5dxhKCCCFB8xxGaqgX0WrAD0TO7I34Vq2j0M",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/my-summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reports",
+                "my-summary"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjY2LCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY4NDM1MCwiZXhwIjoxNzc4Njg3OTUwfQ.alhYaRRhj309kmFx-fmjHvqXrOeaqsmQsYWOqKZJA1s",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjY2LCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY4NDM1MCwiZXhwIjoxNzc4Njg3OTUwfQ.alhYaRRhj309kmFx-fmjHvqXrOeaqsmQsYWOqKZJA1s",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/:id/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                ":id",
+                "read"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "26"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Read-All",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjY2LCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY4NDM1MCwiZXhwIjoxNzc4Njg3OTUwfQ.alhYaRRhj309kmFx-fmjHvqXrOeaqsmQsYWOqKZJA1s",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Clear All Notifications",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjY2LCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY4NDM1MCwiZXhwIjoxNzc4Njg3OTUwfQ.alhYaRRhj309kmFx-fmjHvqXrOeaqsmQsYWOqKZJA1s",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ]
+}

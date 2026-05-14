@@ -1,5 +1,5 @@
 --------------------------------------------------------
---  File created - Tuesday-May-12-2026   
+--  File created - Thursday-May-14-2026   
 --------------------------------------------------------
 --------------------------------------------------------
 --  DDL for Table ACCESS_LOG
@@ -212,6 +212,134 @@
    (	"USER_ID" NUMBER, 
 	"JOB_ID" NUMBER
    ) ;
+--------------------------------------------------------
+--  DDL for View V_ADMIN_QUEUE
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE VIEW "V_ADMIN_QUEUE" ("JOB_ID", "DESCRIPTION", "PAGE_COUNT", "JOB_TYPE", "PRINT_SIDE", "COPIES", "TOTAL_COST", "SUBMISSION_TIME", "COLLECTION_SLOT", "EXPIRY_TIME", "PRIORITY_LEVEL", "STATUS_NAME", "FIRST_NAME", "LAST_NAME", "EMAIL") AS 
+  SELECT 
+    pj.Job_Id,
+    pj.description,
+    pj.Page_count,
+    pj.job_type,
+    pj.print_side,
+    pj.copies,
+    pj.total_cost,
+    pj.Submission_Time,
+    pj.collection_slot,
+    pj.expiry_time,
+    pj.Priority_level,
+    js.Status_Name,
+    au.first_name,
+    au.last_name,
+    au.EMail
+FROM PRINT_JOB pj
+JOIN SUBMITS s ON pj.Job_Id = s.Job_Id
+JOIN APP_USER au ON s.User_ID = au.User_ID
+JOIN HAS_STATUS hs ON pj.Job_Id = hs.Job_Id
+JOIN JOB_STATUS js ON hs.Status_ID = js.Status_ID
+ORDER BY pj.Priority_level DESC, pj.Submission_Time ASC
+;
+--------------------------------------------------------
+--  DDL for View V_DAILY_REPORT
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE VIEW "V_DAILY_REPORT" ("REPORT_DATE", "TOTAL_JOBS", "NORMAL_JOBS", "BULK_JOBS", "TOTAL_REVENUE", "TOTAL_PAGES") AS 
+  SELECT 
+    TRUNC(pj.Submission_Time) AS report_date,
+    COUNT(pj.Job_Id) AS total_jobs,
+    SUM(CASE WHEN pj.job_type = 'normal' THEN 1 ELSE 0 END) AS normal_jobs,
+    SUM(CASE WHEN pj.job_type = 'bulk' THEN 1 ELSE 0 END) AS bulk_jobs,
+    SUM(pj.total_cost) AS total_revenue,
+    SUM(pj.Page_count) AS total_pages
+FROM PRINT_JOB pj
+WHERE pj.Submission_Time >= SYSDATE - 30
+GROUP BY TRUNC(pj.Submission_Time)
+ORDER BY report_date DESC
+;
+--------------------------------------------------------
+--  DDL for View V_JOB_DETAILS
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE VIEW "V_JOB_DETAILS" ("JOB_ID", "DOCUMENT", "DESCRIPTION", "COPIES", "PRINT_MODE", "PRINT_SIDE", "SUBMISSION_TIME", "COMPLETION_TIME", "COLLECTION_SLOT", "EXPIRY_TIME", "PAGE_COUNT", "QR_SECURE_TOKEN", "PRIORITY_LEVEL", "JOB_TYPE", "PRICE_PER_PAGE", "TOTAL_COST", "STATUS_NAME", "USER_ID", "FIRST_NAME", "LAST_NAME", "EMAIL", "ACCOUNT_BALANCE") AS 
+  SELECT 
+    pj.Job_Id,
+    pj.Document,
+    pj.description,
+    pj.copies,
+    pj.print_mode,
+    pj.print_side,
+    pj.Submission_Time,
+    pj.Completion_Time,
+    pj.collection_slot,
+    pj.expiry_time,
+    pj.Page_count,
+    pj.QR_Secure_Token,
+    pj.Priority_level,
+    pj.job_type,
+    pj.price_per_page,
+    pj.total_cost,
+    js.Status_Name,
+    au.User_ID,
+    au.first_name,
+    au.last_name,
+    au.EMail,
+    nu.Account_balance
+FROM PRINT_JOB pj
+JOIN SUBMITS s ON pj.Job_Id = s.Job_Id
+JOIN APP_USER au ON s.User_ID = au.User_ID
+JOIN HAS_STATUS hs ON pj.Job_Id = hs.Job_Id
+JOIN JOB_STATUS js ON hs.Status_ID = js.Status_ID
+LEFT JOIN NORMAL_USER nu ON au.User_ID = nu.User_ID
+;
+--------------------------------------------------------
+--  DDL for View V_TRANSACTION_HISTORY
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE VIEW "V_TRANSACTION_HISTORY" ("TRANSACTION_ID", "USER_ID", "AMOUNT", "TRANSACTION_DATE", "TRANSACTION_TYPE", "BALANCE_AFTER", "JOB_ID") AS 
+  SELECT 
+    ft.Transaction_ID,
+    ft.User_ID,
+    ft.Amount,
+    ft.Transaction_date,
+    ft.transaction_type,
+    ft.balance_after,
+    g.Job_Id
+FROM FINANCIAL_TRANSACTION ft
+LEFT JOIN GENERATES g ON ft.Transaction_ID = g.Transaction_ID
+;
+--------------------------------------------------------
+--  DDL for View V_USER_PROFILE
+--------------------------------------------------------
+
+  CREATE OR REPLACE EDITIONABLE VIEW "V_USER_PROFILE" ("USER_ID", "FIRST_NAME", "LAST_NAME", "EMAIL", "PROFILE_PICTURE", "ACTIVE_SESSION", "LAST_LOGIN_TIMESTAMP", "ACCOUNT_BALANCE", "ROLE", "MAJOR", "STUDENT_BATCH", "DEPARTMENT", "FACULTY_RANK") AS 
+  SELECT 
+    au.User_ID,
+    au.first_name,
+    au.last_name,
+    au.EMail,
+    au.profile_picture,
+    au.Active_session,
+    au.last_login_timestamp,
+    nu.Account_balance,
+    CASE 
+        WHEN a.User_ID IS NOT NULL THEN 'admin'
+        WHEN o.User_ID IS NOT NULL THEN 'operator'
+        WHEN f.User_ID IS NOT NULL THEN 'faculty'
+        WHEN st.User_ID IS NOT NULL THEN 'student'
+        ELSE 'unknown'
+    END AS role,
+    st.Major,
+    st.Student_Batch,
+    f.Department,
+    f.Faculty_Rank
+FROM APP_USER au
+LEFT JOIN NORMAL_USER nu ON au.User_ID = nu.User_ID
+LEFT JOIN ADMIN a ON au.User_ID = a.User_ID
+LEFT JOIN OPERATOR o ON au.User_ID = o.User_ID
+LEFT JOIN STUDENT st ON au.User_ID = st.User_ID
+LEFT JOIN FACULTY f ON au.User_ID = f.User_ID
+;
 REM INSERTING into ACCESS_LOG
 SET DEFINE OFF;
 REM INSERTING into ADMIN
@@ -219,9 +347,9 @@ SET DEFINE OFF;
 Insert into ADMIN (USER_ID) values (42);
 REM INSERTING into APP_USER
 SET DEFINE OFF;
-Insert into APP_USER (USER_ID,FIRST_NAME,LAST_NAME,EMAIL,PASSWORD_HASH,ACTIVE_SESSION,LAST_LOGIN_TIMESTAMP,PROFILE_PICTURE,PASSWORD_RESET_TOKEN,PASSWORD_RESET_EXPIRES) values (21,'Mujtaba','Rao','kratos@test.com','$2b$10$4zJ3Jt4tmUM2Uncwd/vhx.wEiB3yPJMAKkoypQYKEfa4I1KsbPQ5C',1,to_timestamp('11-MAY-26 09.05.33.029652000','DD-MON-RR HH24.MI.SSXFF'),null,null,null);
-Insert into APP_USER (USER_ID,FIRST_NAME,LAST_NAME,EMAIL,PASSWORD_HASH,ACTIVE_SESSION,LAST_LOGIN_TIMESTAMP,PROFILE_PICTURE,PASSWORD_RESET_TOKEN,PASSWORD_RESET_EXPIRES) values (2,'Ahmed','Qazi','ahmed@test.com','$2b$10$AgRxHd5lzGQvu7slXvGwF.FRBYlAth24HgyAp6.CkTsaqp5TWrEQC',1,to_timestamp('10-MAY-26 12.01.27.175416000','DD-MON-RR HH24.MI.SSXFF'),null,null,null);
-Insert into APP_USER (USER_ID,FIRST_NAME,LAST_NAME,EMAIL,PASSWORD_HASH,ACTIVE_SESSION,LAST_LOGIN_TIMESTAMP,PROFILE_PICTURE,PASSWORD_RESET_TOKEN,PASSWORD_RESET_EXPIRES) values (42,'Admin','User','admin@test.com','$2b$10$AZDZ7YoCR5CXuij1ePdsgumnt8Ku1mXs0I8LfmQwM2UAtKsc3PjVy',1,to_timestamp('10-MAY-26 20.20.28.172485000','DD-MON-RR HH24.MI.SSXFF'),null,null,null);
+Insert into APP_USER (USER_ID,FIRST_NAME,LAST_NAME,EMAIL,PASSWORD_HASH,ACTIVE_SESSION,LAST_LOGIN_TIMESTAMP,PROFILE_PICTURE,PASSWORD_RESET_TOKEN,PASSWORD_RESET_EXPIRES) values (68,'Test','Operator','operator@test.com','$2b$10$CblTfrL9VWWy1sOiOKKmbeu1KsBiwk1cjk1Fqu13Gz5ULje61bFIG',0,null,null,null,null);
+Insert into APP_USER (USER_ID,FIRST_NAME,LAST_NAME,EMAIL,PASSWORD_HASH,ACTIVE_SESSION,LAST_LOGIN_TIMESTAMP,PROFILE_PICTURE,PASSWORD_RESET_TOKEN,PASSWORD_RESET_EXPIRES) values (2,'Muhammad Ahmed','Qazi','ahmed@test.com','$2b$10$0TxzfmwNbTXccP8w97guk.Pcphb8mF1/4x/.Yap9QkHhmnxPi.TaK',1,to_timestamp('13-MAY-26 18.52.24.496879000','DD-MON-RR HH24.MI.SSXFF'),'uploads/profiles/profile-2-1778680665798.png',null,null);
+Insert into APP_USER (USER_ID,FIRST_NAME,LAST_NAME,EMAIL,PASSWORD_HASH,ACTIVE_SESSION,LAST_LOGIN_TIMESTAMP,PROFILE_PICTURE,PASSWORD_RESET_TOKEN,PASSWORD_RESET_EXPIRES) values (42,'Admin','User','admin@test.com','$2b$10$AZDZ7YoCR5CXuij1ePdsgumnt8Ku1mXs0I8LfmQwM2UAtKsc3PjVy',1,to_timestamp('13-MAY-26 20.09.56.878346000','DD-MON-RR HH24.MI.SSXFF'),null,null,null);
 REM INSERTING into AUDIT_LOG
 SET DEFINE OFF;
 REM INSERTING into COLLECTION_BINS
@@ -235,33 +363,28 @@ Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_I
 Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_ID,TRANSACTION_TYPE,BALANCE_AFTER) values (26,4,to_timestamp('10-MAY-26 12.02.08.998349000','DD-MON-RR HH24.MI.SSXFF'),2,'deduction',null);
 Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_ID,TRANSACTION_TYPE,BALANCE_AFTER) values (27,4.5,to_timestamp('10-MAY-26 12.02.23.045288000','DD-MON-RR HH24.MI.SSXFF'),2,'topup',null);
 Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_ID,TRANSACTION_TYPE,BALANCE_AFTER) values (21,6,to_timestamp('08-MAY-26 22.05.46.585093000','DD-MON-RR HH24.MI.SSXFF'),null,'deduction',null);
-Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_ID,TRANSACTION_TYPE,BALANCE_AFTER) values (43,2,to_timestamp('10-MAY-26 20.13.14.472006000','DD-MON-RR HH24.MI.SSXFF'),21,'deduction',null);
 Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_ID,TRANSACTION_TYPE,BALANCE_AFTER) values (1,2,to_timestamp('08-MAY-26 18.52.36.547154000','DD-MON-RR HH24.MI.SSXFF'),null,'deduction',null);
-Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_ID,TRANSACTION_TYPE,BALANCE_AFTER) values (44,2,to_timestamp('10-MAY-26 20.19.09.218193000','DD-MON-RR HH24.MI.SSXFF'),21,'topup',null);
-Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_ID,TRANSACTION_TYPE,BALANCE_AFTER) values (45,2,to_timestamp('10-MAY-26 20.19.42.226275000','DD-MON-RR HH24.MI.SSXFF'),21,'deduction',null);
 Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_ID,TRANSACTION_TYPE,BALANCE_AFTER) values (22,2,to_timestamp('10-MAY-26 09.27.40.094886000','DD-MON-RR HH24.MI.SSXFF'),null,'deduction',null);
 Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_ID,TRANSACTION_TYPE,BALANCE_AFTER) values (23,100,to_timestamp('10-MAY-26 10.12.05.632252000','DD-MON-RR HH24.MI.SSXFF'),2,'topup',null);
-Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_ID,TRANSACTION_TYPE,BALANCE_AFTER) values (42,6,to_timestamp('10-MAY-26 20.12.56.578754000','DD-MON-RR HH24.MI.SSXFF'),21,'topup',null);
+Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_ID,TRANSACTION_TYPE,BALANCE_AFTER) values (46,-14,to_timestamp('13-MAY-26 10.05.01.641912000','DD-MON-RR HH24.MI.SSXFF'),2,'deduction',531);
+Insert into FINANCIAL_TRANSACTION (TRANSACTION_ID,AMOUNT,TRANSACTION_DATE,USER_ID,TRANSACTION_TYPE,BALANCE_AFTER) values (47,-14,to_timestamp('13-MAY-26 10.08.13.511315000','DD-MON-RR HH24.MI.SSXFF'),2,'deduction',517);
 REM INSERTING into GENERATES
 SET DEFINE OFF;
 Insert into GENERATES (JOB_ID,TRANSACTION_ID) values (2,1);
-Insert into GENERATES (JOB_ID,TRANSACTION_ID) values (21,21);
 Insert into GENERATES (JOB_ID,TRANSACTION_ID) values (22,22);
 Insert into GENERATES (JOB_ID,TRANSACTION_ID) values (23,25);
 Insert into GENERATES (JOB_ID,TRANSACTION_ID) values (42,26);
-Insert into GENERATES (JOB_ID,TRANSACTION_ID) values (62,43);
-Insert into GENERATES (JOB_ID,TRANSACTION_ID) values (63,45);
+Insert into GENERATES (JOB_ID,TRANSACTION_ID) values (66,47);
 REM INSERTING into GOVERNED_BY
 SET DEFINE OFF;
+Insert into GOVERNED_BY (JOB_ID,POLICY_ID) values (66,21);
 REM INSERTING into HAS_STATUS
 SET DEFINE OFF;
 Insert into HAS_STATUS (JOB_ID,STATUS_ID) values (2,1);
-Insert into HAS_STATUS (JOB_ID,STATUS_ID) values (21,4);
 Insert into HAS_STATUS (JOB_ID,STATUS_ID) values (22,1);
 Insert into HAS_STATUS (JOB_ID,STATUS_ID) values (23,1);
 Insert into HAS_STATUS (JOB_ID,STATUS_ID) values (42,4);
-Insert into HAS_STATUS (JOB_ID,STATUS_ID) values (62,1);
-Insert into HAS_STATUS (JOB_ID,STATUS_ID) values (63,1);
+Insert into HAS_STATUS (JOB_ID,STATUS_ID) values (66,1);
 REM INSERTING into JOB_STATUS
 SET DEFINE OFF;
 Insert into JOB_STATUS (STATUS_ID,STATUS_NAME,DESCRIPTION) values (1,'Pending','Job is queued');
@@ -271,18 +394,20 @@ Insert into JOB_STATUS (STATUS_ID,STATUS_NAME,DESCRIPTION) values (4,'Collected'
 Insert into JOB_STATUS (STATUS_ID,STATUS_NAME,DESCRIPTION) values (5,'Discarded','Job was not collected in time');
 REM INSERTING into KIOSK
 SET DEFINE OFF;
+Insert into KIOSK (KIOSK_ID,LOCATION_NAME,STATUS,CURRENT_LOAD) values (1,'Library',null,0);
 REM INSERTING into NORMAL_USER
 SET DEFINE OFF;
-Insert into NORMAL_USER (USER_ID,ACCOUNT_BALANCE) values (21,98);
-Insert into NORMAL_USER (USER_ID,ACCOUNT_BALANCE) values (2,545);
+Insert into NORMAL_USER (USER_ID,ACCOUNT_BALANCE) values (2,517);
 REM INSERTING into NOTIFICATION
 SET DEFINE OFF;
+Insert into NOTIFICATION (NOTIFICATION_ID,USER_ID,TITLE,MESSAGE,IS_READ,NOTIFICATION_TYPE,RELATED_JOB_ID,CREATED_AT) values (1,2,'Job Submitted','Your print job #65 has been submitted successfully',0,'job_submitted',null,to_timestamp('13-MAY-26 10.05.01.708671000','DD-MON-RR HH24.MI.SSXFF'));
+Insert into NOTIFICATION (NOTIFICATION_ID,USER_ID,TITLE,MESSAGE,IS_READ,NOTIFICATION_TYPE,RELATED_JOB_ID,CREATED_AT) values (2,2,'Job Submitted','Your print job #66 has been submitted successfully',0,'job_submitted',66,to_timestamp('13-MAY-26 10.08.13.513059000','DD-MON-RR HH24.MI.SSXFF'));
 REM INSERTING into OPERATOR
 SET DEFINE OFF;
+Insert into OPERATOR (USER_ID,ASSIGNED_KIOSK) values (68,1);
 REM INSERTING into PLACED_IN
 SET DEFINE OFF;
 Insert into PLACED_IN (JOB_ID,KIOSK_ID,BIN_ID) values (42,null,null);
-Insert into PLACED_IN (JOB_ID,KIOSK_ID,BIN_ID) values (21,null,null);
 REM INSERTING into PRICE_RATE
 SET DEFINE OFF;
 Insert into PRICE_RATE (POLICY_ID,JOB_TYPE,RATE_PER_PAGE) values (21,'normal',7);
@@ -291,14 +416,11 @@ REM INSERTING into PRINT_JOB
 SET DEFINE OFF;
 Insert into PRINT_JOB (JOB_ID,DOCUMENT,SUBMISSION_TIME,COMPLETION_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,SCHEDULED_TIME,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,COLLECTION_SLOT,PRICE_PER_PAGE,TOTAL_COST,EXPIRY_TIME) values (23,'uploads/file-1778392066158-93349827.pdf',to_timestamp('10-MAY-26 10.47.46.270409000','DD-MON-RR HH24.MI.SSXFF'),null,1,'b048bb26-d960-4b33-9a6e-ae7272487586',1,'bulk',null,null,1,'bw','single',null,null,null,null);
 Insert into PRINT_JOB (JOB_ID,DOCUMENT,SUBMISSION_TIME,COMPLETION_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,SCHEDULED_TIME,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,COLLECTION_SLOT,PRICE_PER_PAGE,TOTAL_COST,EXPIRY_TIME) values (42,'uploads/file-1778396528850-605437386.pdf',to_timestamp('10-MAY-26 12.02.08.971556000','DD-MON-RR HH24.MI.SSXFF'),to_timestamp('10-MAY-26 12.29.34.084501000','DD-MON-RR HH24.MI.SSXFF'),2,'b40f7a13-cba6-4dd4-a142-b0d681d9c19d',1,'normal',null,null,1,'bw','single',null,null,null,null);
-Insert into PRINT_JOB (JOB_ID,DOCUMENT,SUBMISSION_TIME,COMPLETION_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,SCHEDULED_TIME,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,COLLECTION_SLOT,PRICE_PER_PAGE,TOTAL_COST,EXPIRY_TIME) values (21,'uploads/file-1778259946290-144380605.pdf',to_timestamp('08-MAY-26 22.05.46.550782000','DD-MON-RR HH24.MI.SSXFF'),to_timestamp('10-MAY-26 20.22.11.324979000','DD-MON-RR HH24.MI.SSXFF'),3,'6d47fef2-3bcb-401b-9f5e-c95ea5f23c7a',1,'normal',null,null,1,'bw','single',null,null,null,null);
-Insert into PRINT_JOB (JOB_ID,DOCUMENT,SUBMISSION_TIME,COMPLETION_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,SCHEDULED_TIME,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,COLLECTION_SLOT,PRICE_PER_PAGE,TOTAL_COST,EXPIRY_TIME) values (62,'uploads/file-1778425994367-926167148.pdf',to_timestamp('10-MAY-26 20.13.14.455523000','DD-MON-RR HH24.MI.SSXFF'),null,1,'c24732b5-274b-482c-932e-36c69567293a',1,'normal',null,null,1,'bw','single',null,null,null,null);
 Insert into PRINT_JOB (JOB_ID,DOCUMENT,SUBMISSION_TIME,COMPLETION_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,SCHEDULED_TIME,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,COLLECTION_SLOT,PRICE_PER_PAGE,TOTAL_COST,EXPIRY_TIME) values (2,'uploads/file-1778248356190-928518665.pdf',to_timestamp('08-MAY-26 18.52.36.522872000','DD-MON-RR HH24.MI.SSXFF'),null,1,'4f1406d1-7a77-4fa9-a0fd-e1bb319a91b8',1,'normal',null,null,1,'bw','single',null,null,null,null);
-Insert into PRINT_JOB (JOB_ID,DOCUMENT,SUBMISSION_TIME,COMPLETION_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,SCHEDULED_TIME,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,COLLECTION_SLOT,PRICE_PER_PAGE,TOTAL_COST,EXPIRY_TIME) values (63,'uploads/file-1778426382165-580281140.pdf',to_timestamp('10-MAY-26 20.19.42.224010000','DD-MON-RR HH24.MI.SSXFF'),null,1,'213260ec-9792-412c-a3d4-e18a54568b25',1,'normal',null,null,1,'bw','single',null,null,null,null);
 Insert into PRINT_JOB (JOB_ID,DOCUMENT,SUBMISSION_TIME,COMPLETION_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,SCHEDULED_TIME,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,COLLECTION_SLOT,PRICE_PER_PAGE,TOTAL_COST,EXPIRY_TIME) values (22,'uploads/file-1778387259886-942870544.pdf',to_timestamp('10-MAY-26 09.27.40.053018000','DD-MON-RR HH24.MI.SSXFF'),null,1,'ac287461-46f6-4972-aa76-eeefdd99b214',1,'normal',null,null,1,'bw','single',null,null,null,null);
+Insert into PRINT_JOB (JOB_ID,DOCUMENT,SUBMISSION_TIME,COMPLETION_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,SCHEDULED_TIME,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,COLLECTION_SLOT,PRICE_PER_PAGE,TOTAL_COST,EXPIRY_TIME) values (66,'uploads/file-1778648893173-694487702-Blank-Page.pdf',to_timestamp('13-MAY-26 10.08.13.504899000','DD-MON-RR HH24.MI.SSXFF'),null,1,'99035863-4187-4197-909a-eef8d00c8bc2',1,'normal',null,'Testing...',2,'bw','single',to_timestamp('14-MAY-26 15.00.00.000000000','DD-MON-RR HH24.MI.SSXFF'),7,14,to_timestamp('15-MAY-26 15.00.00.000000000','DD-MON-RR HH24.MI.SSXFF'));
 REM INSERTING into STUDENT
 SET DEFINE OFF;
-Insert into STUDENT (USER_ID,MAJOR,STUDENT_BATCH) values (21,'Computer Systems','2024');
 Insert into STUDENT (USER_ID,MAJOR,STUDENT_BATCH) values (2,'Computer Systems','2024');
 REM INSERTING into SUBMITS
 SET DEFINE OFF;
@@ -306,9 +428,43 @@ Insert into SUBMITS (USER_ID,JOB_ID) values (2,2);
 Insert into SUBMITS (USER_ID,JOB_ID) values (2,22);
 Insert into SUBMITS (USER_ID,JOB_ID) values (2,23);
 Insert into SUBMITS (USER_ID,JOB_ID) values (2,42);
-Insert into SUBMITS (USER_ID,JOB_ID) values (21,21);
-Insert into SUBMITS (USER_ID,JOB_ID) values (21,62);
-Insert into SUBMITS (USER_ID,JOB_ID) values (21,63);
+Insert into SUBMITS (USER_ID,JOB_ID) values (2,66);
+REM INSERTING into V_ADMIN_QUEUE
+SET DEFINE OFF;
+Insert into V_ADMIN_QUEUE (JOB_ID,DESCRIPTION,PAGE_COUNT,JOB_TYPE,PRINT_SIDE,COPIES,TOTAL_COST,SUBMISSION_TIME,COLLECTION_SLOT,EXPIRY_TIME,PRIORITY_LEVEL,STATUS_NAME,FIRST_NAME,LAST_NAME,EMAIL) values (2,null,1,'normal','single',1,null,to_timestamp('08-MAY-26 18.52.36.522872000','DD-MON-RR HH24.MI.SSXFF'),null,null,1,'Pending','Muhammad Ahmed','Qazi','ahmed@test.com');
+Insert into V_ADMIN_QUEUE (JOB_ID,DESCRIPTION,PAGE_COUNT,JOB_TYPE,PRINT_SIDE,COPIES,TOTAL_COST,SUBMISSION_TIME,COLLECTION_SLOT,EXPIRY_TIME,PRIORITY_LEVEL,STATUS_NAME,FIRST_NAME,LAST_NAME,EMAIL) values (22,null,1,'normal','single',1,null,to_timestamp('10-MAY-26 09.27.40.053018000','DD-MON-RR HH24.MI.SSXFF'),null,null,1,'Pending','Muhammad Ahmed','Qazi','ahmed@test.com');
+Insert into V_ADMIN_QUEUE (JOB_ID,DESCRIPTION,PAGE_COUNT,JOB_TYPE,PRINT_SIDE,COPIES,TOTAL_COST,SUBMISSION_TIME,COLLECTION_SLOT,EXPIRY_TIME,PRIORITY_LEVEL,STATUS_NAME,FIRST_NAME,LAST_NAME,EMAIL) values (23,null,1,'bulk','single',1,null,to_timestamp('10-MAY-26 10.47.46.270409000','DD-MON-RR HH24.MI.SSXFF'),null,null,1,'Pending','Muhammad Ahmed','Qazi','ahmed@test.com');
+Insert into V_ADMIN_QUEUE (JOB_ID,DESCRIPTION,PAGE_COUNT,JOB_TYPE,PRINT_SIDE,COPIES,TOTAL_COST,SUBMISSION_TIME,COLLECTION_SLOT,EXPIRY_TIME,PRIORITY_LEVEL,STATUS_NAME,FIRST_NAME,LAST_NAME,EMAIL) values (42,null,2,'normal','single',1,null,to_timestamp('10-MAY-26 12.02.08.971556000','DD-MON-RR HH24.MI.SSXFF'),null,null,1,'Collected','Muhammad Ahmed','Qazi','ahmed@test.com');
+Insert into V_ADMIN_QUEUE (JOB_ID,DESCRIPTION,PAGE_COUNT,JOB_TYPE,PRINT_SIDE,COPIES,TOTAL_COST,SUBMISSION_TIME,COLLECTION_SLOT,EXPIRY_TIME,PRIORITY_LEVEL,STATUS_NAME,FIRST_NAME,LAST_NAME,EMAIL) values (66,'Testing...',1,'normal','single',2,14,to_timestamp('13-MAY-26 10.08.13.504899000','DD-MON-RR HH24.MI.SSXFF'),to_timestamp('14-MAY-26 15.00.00.000000000','DD-MON-RR HH24.MI.SSXFF'),to_timestamp('15-MAY-26 15.00.00.000000000','DD-MON-RR HH24.MI.SSXFF'),1,'Pending','Muhammad Ahmed','Qazi','ahmed@test.com');
+REM INSERTING into V_DAILY_REPORT
+SET DEFINE OFF;
+Insert into V_DAILY_REPORT (REPORT_DATE,TOTAL_JOBS,NORMAL_JOBS,BULK_JOBS,TOTAL_REVENUE,TOTAL_PAGES) values (to_date('13-MAY-26','DD-MON-RR'),1,1,0,14,1);
+Insert into V_DAILY_REPORT (REPORT_DATE,TOTAL_JOBS,NORMAL_JOBS,BULK_JOBS,TOTAL_REVENUE,TOTAL_PAGES) values (to_date('10-MAY-26','DD-MON-RR'),3,2,1,null,4);
+Insert into V_DAILY_REPORT (REPORT_DATE,TOTAL_JOBS,NORMAL_JOBS,BULK_JOBS,TOTAL_REVENUE,TOTAL_PAGES) values (to_date('08-MAY-26','DD-MON-RR'),1,1,0,null,1);
+REM INSERTING into V_JOB_DETAILS
+SET DEFINE OFF;
+Insert into V_JOB_DETAILS (JOB_ID,DOCUMENT,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,SUBMISSION_TIME,COMPLETION_TIME,COLLECTION_SLOT,EXPIRY_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,PRICE_PER_PAGE,TOTAL_COST,STATUS_NAME,USER_ID,FIRST_NAME,LAST_NAME,EMAIL,ACCOUNT_BALANCE) values (2,'uploads/file-1778248356190-928518665.pdf',null,1,'bw','single',to_timestamp('08-MAY-26 18.52.36.522872000','DD-MON-RR HH24.MI.SSXFF'),null,null,null,1,'4f1406d1-7a77-4fa9-a0fd-e1bb319a91b8',1,'normal',null,null,'Pending',2,'Muhammad Ahmed','Qazi','ahmed@test.com',517);
+Insert into V_JOB_DETAILS (JOB_ID,DOCUMENT,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,SUBMISSION_TIME,COMPLETION_TIME,COLLECTION_SLOT,EXPIRY_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,PRICE_PER_PAGE,TOTAL_COST,STATUS_NAME,USER_ID,FIRST_NAME,LAST_NAME,EMAIL,ACCOUNT_BALANCE) values (22,'uploads/file-1778387259886-942870544.pdf',null,1,'bw','single',to_timestamp('10-MAY-26 09.27.40.053018000','DD-MON-RR HH24.MI.SSXFF'),null,null,null,1,'ac287461-46f6-4972-aa76-eeefdd99b214',1,'normal',null,null,'Pending',2,'Muhammad Ahmed','Qazi','ahmed@test.com',517);
+Insert into V_JOB_DETAILS (JOB_ID,DOCUMENT,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,SUBMISSION_TIME,COMPLETION_TIME,COLLECTION_SLOT,EXPIRY_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,PRICE_PER_PAGE,TOTAL_COST,STATUS_NAME,USER_ID,FIRST_NAME,LAST_NAME,EMAIL,ACCOUNT_BALANCE) values (23,'uploads/file-1778392066158-93349827.pdf',null,1,'bw','single',to_timestamp('10-MAY-26 10.47.46.270409000','DD-MON-RR HH24.MI.SSXFF'),null,null,null,1,'b048bb26-d960-4b33-9a6e-ae7272487586',1,'bulk',null,null,'Pending',2,'Muhammad Ahmed','Qazi','ahmed@test.com',517);
+Insert into V_JOB_DETAILS (JOB_ID,DOCUMENT,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,SUBMISSION_TIME,COMPLETION_TIME,COLLECTION_SLOT,EXPIRY_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,PRICE_PER_PAGE,TOTAL_COST,STATUS_NAME,USER_ID,FIRST_NAME,LAST_NAME,EMAIL,ACCOUNT_BALANCE) values (66,'uploads/file-1778648893173-694487702-Blank-Page.pdf','Testing...',2,'bw','single',to_timestamp('13-MAY-26 10.08.13.504899000','DD-MON-RR HH24.MI.SSXFF'),null,to_timestamp('14-MAY-26 15.00.00.000000000','DD-MON-RR HH24.MI.SSXFF'),to_timestamp('15-MAY-26 15.00.00.000000000','DD-MON-RR HH24.MI.SSXFF'),1,'99035863-4187-4197-909a-eef8d00c8bc2',1,'normal',7,14,'Pending',2,'Muhammad Ahmed','Qazi','ahmed@test.com',517);
+Insert into V_JOB_DETAILS (JOB_ID,DOCUMENT,DESCRIPTION,COPIES,PRINT_MODE,PRINT_SIDE,SUBMISSION_TIME,COMPLETION_TIME,COLLECTION_SLOT,EXPIRY_TIME,PAGE_COUNT,QR_SECURE_TOKEN,PRIORITY_LEVEL,JOB_TYPE,PRICE_PER_PAGE,TOTAL_COST,STATUS_NAME,USER_ID,FIRST_NAME,LAST_NAME,EMAIL,ACCOUNT_BALANCE) values (42,'uploads/file-1778396528850-605437386.pdf',null,1,'bw','single',to_timestamp('10-MAY-26 12.02.08.971556000','DD-MON-RR HH24.MI.SSXFF'),to_timestamp('10-MAY-26 12.29.34.084501000','DD-MON-RR HH24.MI.SSXFF'),null,null,2,'b40f7a13-cba6-4dd4-a142-b0d681d9c19d',1,'normal',null,null,'Collected',2,'Muhammad Ahmed','Qazi','ahmed@test.com',517);
+REM INSERTING into V_TRANSACTION_HISTORY
+SET DEFINE OFF;
+Insert into V_TRANSACTION_HISTORY (TRANSACTION_ID,USER_ID,AMOUNT,TRANSACTION_DATE,TRANSACTION_TYPE,BALANCE_AFTER,JOB_ID) values (1,null,2,to_timestamp('08-MAY-26 18.52.36.547154000','DD-MON-RR HH24.MI.SSXFF'),'deduction',null,2);
+Insert into V_TRANSACTION_HISTORY (TRANSACTION_ID,USER_ID,AMOUNT,TRANSACTION_DATE,TRANSACTION_TYPE,BALANCE_AFTER,JOB_ID) values (22,null,2,to_timestamp('10-MAY-26 09.27.40.094886000','DD-MON-RR HH24.MI.SSXFF'),'deduction',null,22);
+Insert into V_TRANSACTION_HISTORY (TRANSACTION_ID,USER_ID,AMOUNT,TRANSACTION_DATE,TRANSACTION_TYPE,BALANCE_AFTER,JOB_ID) values (25,2,1.5,to_timestamp('10-MAY-26 10.47.46.286071000','DD-MON-RR HH24.MI.SSXFF'),'deduction',null,23);
+Insert into V_TRANSACTION_HISTORY (TRANSACTION_ID,USER_ID,AMOUNT,TRANSACTION_DATE,TRANSACTION_TYPE,BALANCE_AFTER,JOB_ID) values (26,2,4,to_timestamp('10-MAY-26 12.02.08.998349000','DD-MON-RR HH24.MI.SSXFF'),'deduction',null,42);
+Insert into V_TRANSACTION_HISTORY (TRANSACTION_ID,USER_ID,AMOUNT,TRANSACTION_DATE,TRANSACTION_TYPE,BALANCE_AFTER,JOB_ID) values (47,2,-14,to_timestamp('13-MAY-26 10.08.13.511315000','DD-MON-RR HH24.MI.SSXFF'),'deduction',517,66);
+Insert into V_TRANSACTION_HISTORY (TRANSACTION_ID,USER_ID,AMOUNT,TRANSACTION_DATE,TRANSACTION_TYPE,BALANCE_AFTER,JOB_ID) values (23,2,100,to_timestamp('10-MAY-26 10.12.05.632252000','DD-MON-RR HH24.MI.SSXFF'),'topup',null,null);
+Insert into V_TRANSACTION_HISTORY (TRANSACTION_ID,USER_ID,AMOUNT,TRANSACTION_DATE,TRANSACTION_TYPE,BALANCE_AFTER,JOB_ID) values (27,2,4.5,to_timestamp('10-MAY-26 12.02.23.045288000','DD-MON-RR HH24.MI.SSXFF'),'topup',null,null);
+Insert into V_TRANSACTION_HISTORY (TRANSACTION_ID,USER_ID,AMOUNT,TRANSACTION_DATE,TRANSACTION_TYPE,BALANCE_AFTER,JOB_ID) values (21,null,6,to_timestamp('08-MAY-26 22.05.46.585093000','DD-MON-RR HH24.MI.SSXFF'),'deduction',null,null);
+Insert into V_TRANSACTION_HISTORY (TRANSACTION_ID,USER_ID,AMOUNT,TRANSACTION_DATE,TRANSACTION_TYPE,BALANCE_AFTER,JOB_ID) values (46,2,-14,to_timestamp('13-MAY-26 10.05.01.641912000','DD-MON-RR HH24.MI.SSXFF'),'deduction',531,null);
+Insert into V_TRANSACTION_HISTORY (TRANSACTION_ID,USER_ID,AMOUNT,TRANSACTION_DATE,TRANSACTION_TYPE,BALANCE_AFTER,JOB_ID) values (24,2,50,to_timestamp('10-MAY-26 10.24.01.618675000','DD-MON-RR HH24.MI.SSXFF'),'topup',null,null);
+REM INSERTING into V_USER_PROFILE
+SET DEFINE OFF;
+Insert into V_USER_PROFILE (USER_ID,FIRST_NAME,LAST_NAME,EMAIL,PROFILE_PICTURE,ACTIVE_SESSION,LAST_LOGIN_TIMESTAMP,ACCOUNT_BALANCE,ROLE,MAJOR,STUDENT_BATCH,DEPARTMENT,FACULTY_RANK) values (68,'Test','Operator','operator@test.com',null,0,null,null,'operator',null,null,null,null);
+Insert into V_USER_PROFILE (USER_ID,FIRST_NAME,LAST_NAME,EMAIL,PROFILE_PICTURE,ACTIVE_SESSION,LAST_LOGIN_TIMESTAMP,ACCOUNT_BALANCE,ROLE,MAJOR,STUDENT_BATCH,DEPARTMENT,FACULTY_RANK) values (2,'Muhammad Ahmed','Qazi','ahmed@test.com','uploads/profiles/profile-2-1778680665798.png',1,to_timestamp('13-MAY-26 18.52.24.496879000','DD-MON-RR HH24.MI.SSXFF'),517,'student','Computer Systems','2024',null,null);
+Insert into V_USER_PROFILE (USER_ID,FIRST_NAME,LAST_NAME,EMAIL,PROFILE_PICTURE,ACTIVE_SESSION,LAST_LOGIN_TIMESTAMP,ACCOUNT_BALANCE,ROLE,MAJOR,STUDENT_BATCH,DEPARTMENT,FACULTY_RANK) values (42,'Admin','User','admin@test.com',null,1,to_timestamp('13-MAY-26 20.09.56.878346000','DD-MON-RR HH24.MI.SSXFF'),null,'admin',null,null,null,null);
 --------------------------------------------------------
 --  DDL for Index IDX_ACCESS_LOGIN_TIME
 --------------------------------------------------------
@@ -789,6 +945,191 @@ Insert into SUBMITS (USER_ID,JOB_ID) values (21,63);
 
   CREATE INDEX "IDX_SUBMITS_JOB" ON "SUBMITS" ("JOB_ID") 
   ;
+--------------------------------------------------------
+--  DDL for Procedure SP_CONFIRM_HANDOVER
+--------------------------------------------------------
+set define off;
+
+  CREATE OR REPLACE EDITIONABLE PROCEDURE "SP_CONFIRM_HANDOVER" (
+    p_job_id IN NUMBER,
+    p_kiosk_id IN NUMBER,
+    p_bin_id IN VARCHAR2
+) AS
+    v_user_id NUMBER;
+    v_collected_status_id NUMBER;
+BEGIN
+    -- Get collected status
+    SELECT Status_ID INTO v_collected_status_id
+    FROM JOB_STATUS WHERE Status_Name = 'Collected';
+
+    -- Get job owner
+    SELECT User_ID INTO v_user_id
+    FROM SUBMITS WHERE Job_Id = p_job_id;
+
+    -- Update status
+    UPDATE HAS_STATUS 
+    SET Status_ID = v_collected_status_id
+    WHERE Job_Id = p_job_id;
+
+    -- Update completion time
+    UPDATE PRINT_JOB 
+    SET Completion_Time = CURRENT_TIMESTAMP
+    WHERE Job_Id = p_job_id;
+
+    -- Insert placement record
+    INSERT INTO PLACED_IN (Job_Id, Kiosk_ID, Bin_ID)
+    VALUES (p_job_id, p_kiosk_id, p_bin_id);
+
+    -- Create notification for user
+    INSERT INTO NOTIFICATION (
+        User_ID, title, message, notification_type, related_job_id
+    ) VALUES (
+        v_user_id,
+        'Ready for Collection',
+        'Your print job #' || p_job_id || ' is ready at Bin ' || p_bin_id,
+        'job_collected',
+        p_job_id
+    );
+
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END SP_CONFIRM_HANDOVER;
+
+/
+--------------------------------------------------------
+--  DDL for Procedure SP_SUBMIT_JOB
+--------------------------------------------------------
+set define off;
+
+  CREATE OR REPLACE EDITIONABLE PROCEDURE "SP_SUBMIT_JOB" (
+    p_user_id IN NUMBER,
+    p_document IN VARCHAR2,
+    p_page_count IN NUMBER,
+    p_copies IN NUMBER,
+    p_job_type IN VARCHAR2,
+    p_print_mode IN VARCHAR2,
+    p_print_side IN VARCHAR2,
+    p_collection_slot IN TIMESTAMP,
+    p_description IN VARCHAR2,
+    p_qr_token IN VARCHAR2,
+    p_priority IN NUMBER,
+    p_price_per_page IN NUMBER,
+    p_total_cost IN NUMBER,
+    p_expiry_time IN TIMESTAMP,
+    p_job_id OUT NUMBER,
+    p_new_balance OUT NUMBER
+) AS
+    v_balance NUMBER;
+    v_status_id NUMBER;
+    v_policy_id NUMBER;
+    v_transaction_id NUMBER;
+BEGIN
+    -- Check balance
+    SELECT Account_balance INTO v_balance 
+    FROM NORMAL_USER WHERE User_ID = p_user_id FOR UPDATE;
+
+    IF v_balance < p_total_cost THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Insufficient balance');
+    END IF;
+
+    -- Get pending status ID
+    SELECT Status_ID INTO v_status_id 
+    FROM JOB_STATUS WHERE Status_Name = 'Pending';
+
+    -- Get policy ID
+    SELECT Policy_ID INTO v_policy_id 
+    FROM PRICE_RATE WHERE Job_type = p_job_type;
+
+    -- Insert print job
+    INSERT INTO PRINT_JOB (
+        Document, Page_count, copies, job_type, print_mode,
+        print_side, collection_slot, description, QR_Secure_Token,
+        Priority_level, price_per_page, total_cost, expiry_time
+    ) VALUES (
+        p_document, p_page_count, p_copies, p_job_type, p_print_mode,
+        p_print_side, p_collection_slot, p_description, p_qr_token,
+        p_priority, p_price_per_page, p_total_cost, p_expiry_time
+    ) RETURNING Job_Id INTO p_job_id;
+
+    -- Insert into SUBMITS
+    INSERT INTO SUBMITS (User_ID, Job_Id) VALUES (p_user_id, p_job_id);
+
+    -- Insert into HAS_STATUS
+    INSERT INTO HAS_STATUS (Job_Id, Status_ID) VALUES (p_job_id, v_status_id);
+
+    -- Insert into GOVERNED_BY
+    INSERT INTO GOVERNED_BY (Job_Id, Policy_ID) VALUES (p_job_id, v_policy_id);
+
+    -- Deduct balance
+    UPDATE NORMAL_USER 
+    SET Account_balance = Account_balance - p_total_cost
+    WHERE User_ID = p_user_id
+    RETURNING Account_balance INTO p_new_balance;
+
+    -- Create transaction record
+    INSERT INTO FINANCIAL_TRANSACTION (
+        Amount, transaction_type, User_ID, balance_after
+    ) VALUES (
+        -p_total_cost, 'deduction', p_user_id, p_new_balance
+    ) RETURNING Transaction_ID INTO v_transaction_id;
+
+    -- Link transaction to job
+    INSERT INTO GENERATES (Job_Id, Transaction_ID) 
+    VALUES (p_job_id, v_transaction_id);
+
+    -- Create notification
+    INSERT INTO NOTIFICATION (
+        User_ID, title, message, notification_type, related_job_id
+    ) VALUES (
+        p_user_id,
+        'Job Submitted',
+        'Your print job #' || p_job_id || ' has been submitted successfully',
+        'job_submitted',
+        p_job_id
+    );
+
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END SP_SUBMIT_JOB;
+
+/
+--------------------------------------------------------
+--  DDL for Procedure SP_TOPUP_BALANCE
+--------------------------------------------------------
+set define off;
+
+  CREATE OR REPLACE EDITIONABLE PROCEDURE "SP_TOPUP_BALANCE" (
+    p_user_id IN NUMBER,
+    p_amount IN NUMBER,
+    p_new_balance OUT NUMBER,
+    p_transaction_id OUT NUMBER
+) AS
+BEGIN
+    UPDATE NORMAL_USER
+    SET Account_balance = Account_balance + p_amount
+    WHERE User_ID = p_user_id
+    RETURNING Account_balance INTO p_new_balance;
+
+    INSERT INTO FINANCIAL_TRANSACTION (
+        Amount, transaction_type, User_ID, balance_after
+    ) VALUES (
+        p_amount, 'topup', p_user_id, p_new_balance
+    ) RETURNING Transaction_ID INTO p_transaction_id;
+
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+END SP_TOPUP_BALANCE;
+
+/
 --------------------------------------------------------
 --  Constraints for Table ACCESS_LOG
 --------------------------------------------------------
@@ -940,7 +1281,7 @@ Insert into SUBMITS (USER_ID,JOB_ID) values (21,63);
 --------------------------------------------------------
 
   ALTER TABLE "ACCESS_LOG" ADD CONSTRAINT "FK_ACCESS_USER" FOREIGN KEY ("USER_ID")
-	  REFERENCES "APP_USER" ("USER_ID") ENABLE;
+	  REFERENCES "APP_USER" ("USER_ID") ON DELETE CASCADE ENABLE;
 --------------------------------------------------------
 --  Ref Constraints for Table ADMIN
 --------------------------------------------------------
@@ -952,7 +1293,7 @@ Insert into SUBMITS (USER_ID,JOB_ID) values (21,63);
 --------------------------------------------------------
 
   ALTER TABLE "AUDIT_LOG" ADD CONSTRAINT "FK_AUDIT_USER" FOREIGN KEY ("USER_ID")
-	  REFERENCES "APP_USER" ("USER_ID") ENABLE;
+	  REFERENCES "APP_USER" ("USER_ID") ON DELETE CASCADE ENABLE;
 --------------------------------------------------------
 --  Ref Constraints for Table COLLECTION_BINS
 --------------------------------------------------------
@@ -970,31 +1311,31 @@ Insert into SUBMITS (USER_ID,JOB_ID) values (21,63);
 --------------------------------------------------------
 
   ALTER TABLE "FINANCIAL_TRANSACTION" ADD CONSTRAINT "FK_TRANS_USER" FOREIGN KEY ("USER_ID")
-	  REFERENCES "APP_USER" ("USER_ID") ENABLE;
+	  REFERENCES "APP_USER" ("USER_ID") ON DELETE CASCADE ENABLE;
 --------------------------------------------------------
 --  Ref Constraints for Table GENERATES
 --------------------------------------------------------
 
   ALTER TABLE "GENERATES" ADD CONSTRAINT "FK_GEN_JOB" FOREIGN KEY ("JOB_ID")
-	  REFERENCES "PRINT_JOB" ("JOB_ID") ENABLE;
+	  REFERENCES "PRINT_JOB" ("JOB_ID") ON DELETE CASCADE ENABLE;
   ALTER TABLE "GENERATES" ADD CONSTRAINT "FK_GEN_TRANS" FOREIGN KEY ("TRANSACTION_ID")
-	  REFERENCES "FINANCIAL_TRANSACTION" ("TRANSACTION_ID") ENABLE;
+	  REFERENCES "FINANCIAL_TRANSACTION" ("TRANSACTION_ID") ON DELETE CASCADE ENABLE;
 --------------------------------------------------------
 --  Ref Constraints for Table GOVERNED_BY
 --------------------------------------------------------
 
   ALTER TABLE "GOVERNED_BY" ADD CONSTRAINT "FK_GOV_JOB" FOREIGN KEY ("JOB_ID")
-	  REFERENCES "PRINT_JOB" ("JOB_ID") ENABLE;
+	  REFERENCES "PRINT_JOB" ("JOB_ID") ON DELETE CASCADE ENABLE;
   ALTER TABLE "GOVERNED_BY" ADD CONSTRAINT "FK_GOV_POLICY" FOREIGN KEY ("POLICY_ID")
-	  REFERENCES "PRICE_RATE" ("POLICY_ID") ENABLE;
+	  REFERENCES "PRICE_RATE" ("POLICY_ID") ON DELETE CASCADE ENABLE;
 --------------------------------------------------------
 --  Ref Constraints for Table HAS_STATUS
 --------------------------------------------------------
 
-  ALTER TABLE "HAS_STATUS" ADD CONSTRAINT "FK_HAS_STATUS_JOB" FOREIGN KEY ("JOB_ID")
-	  REFERENCES "PRINT_JOB" ("JOB_ID") ENABLE;
   ALTER TABLE "HAS_STATUS" ADD CONSTRAINT "FK_HAS_STATUS_STATUS" FOREIGN KEY ("STATUS_ID")
-	  REFERENCES "JOB_STATUS" ("STATUS_ID") ENABLE;
+	  REFERENCES "JOB_STATUS" ("STATUS_ID") ON DELETE CASCADE ENABLE;
+  ALTER TABLE "HAS_STATUS" ADD CONSTRAINT "FK_HAS_STATUS_JOB" FOREIGN KEY ("JOB_ID")
+	  REFERENCES "PRINT_JOB" ("JOB_ID") ON DELETE CASCADE ENABLE;
 --------------------------------------------------------
 --  Ref Constraints for Table NORMAL_USER
 --------------------------------------------------------
@@ -1008,23 +1349,23 @@ Insert into SUBMITS (USER_ID,JOB_ID) values (21,63);
   ALTER TABLE "NOTIFICATION" ADD CONSTRAINT "FK_NOTIF_USER" FOREIGN KEY ("USER_ID")
 	  REFERENCES "APP_USER" ("USER_ID") ON DELETE CASCADE ENABLE;
   ALTER TABLE "NOTIFICATION" ADD CONSTRAINT "FK_NOTIF_JOB" FOREIGN KEY ("RELATED_JOB_ID")
-	  REFERENCES "PRINT_JOB" ("JOB_ID") ENABLE;
+	  REFERENCES "PRINT_JOB" ("JOB_ID") ON DELETE CASCADE ENABLE;
 --------------------------------------------------------
 --  Ref Constraints for Table OPERATOR
 --------------------------------------------------------
 
+  ALTER TABLE "OPERATOR" ADD CONSTRAINT "FK_OPERATOR_KIOSK" FOREIGN KEY ("ASSIGNED_KIOSK")
+	  REFERENCES "KIOSK" ("KIOSK_ID") ON DELETE SET NULL ENABLE;
   ALTER TABLE "OPERATOR" ADD CONSTRAINT "FK_OPERATOR_USER" FOREIGN KEY ("USER_ID")
 	  REFERENCES "APP_USER" ("USER_ID") ON DELETE CASCADE ENABLE;
-  ALTER TABLE "OPERATOR" ADD CONSTRAINT "FK_OPERATOR_KIOSK" FOREIGN KEY ("ASSIGNED_KIOSK")
-	  REFERENCES "KIOSK" ("KIOSK_ID") ENABLE;
 --------------------------------------------------------
 --  Ref Constraints for Table PLACED_IN
 --------------------------------------------------------
 
   ALTER TABLE "PLACED_IN" ADD CONSTRAINT "FK_PLACED_JOB" FOREIGN KEY ("JOB_ID")
-	  REFERENCES "PRINT_JOB" ("JOB_ID") ENABLE;
+	  REFERENCES "PRINT_JOB" ("JOB_ID") ON DELETE CASCADE ENABLE;
   ALTER TABLE "PLACED_IN" ADD CONSTRAINT "FK_PLACED_BIN" FOREIGN KEY ("KIOSK_ID", "BIN_ID")
-	  REFERENCES "COLLECTION_BINS" ("KIOSK_ID", "BIN_ID") ENABLE;
+	  REFERENCES "COLLECTION_BINS" ("KIOSK_ID", "BIN_ID") ON DELETE CASCADE ENABLE;
 --------------------------------------------------------
 --  Ref Constraints for Table STUDENT
 --------------------------------------------------------
@@ -1035,7 +1376,7 @@ Insert into SUBMITS (USER_ID,JOB_ID) values (21,63);
 --  Ref Constraints for Table SUBMITS
 --------------------------------------------------------
 
-  ALTER TABLE "SUBMITS" ADD CONSTRAINT "FK_SUBMITS_USER" FOREIGN KEY ("USER_ID")
-	  REFERENCES "APP_USER" ("USER_ID") ENABLE;
   ALTER TABLE "SUBMITS" ADD CONSTRAINT "FK_SUBMITS_JOB" FOREIGN KEY ("JOB_ID")
-	  REFERENCES "PRINT_JOB" ("JOB_ID") ENABLE;
+	  REFERENCES "PRINT_JOB" ("JOB_ID") ON DELETE CASCADE ENABLE;
+  ALTER TABLE "SUBMITS" ADD CONSTRAINT "FK_SUBMITS_USER" FOREIGN KEY ("USER_ID")
+	  REFERENCES "APP_USER" ("USER_ID") ON DELETE CASCADE ENABLE;
