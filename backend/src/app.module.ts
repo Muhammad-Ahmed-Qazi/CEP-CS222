@@ -10,6 +10,8 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { AdminModule } from './admin/admin.module';
 import { ReportsModule } from './reports/reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { KioskModule } from './kiosk/kiosk.module';
+import { OperatorModule } from './operator/operator.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     ReportsModule,
     AdminModule,
     NotificationsModule,
+    KioskModule,
+    OperatorModule,
   ],
   controllers: [AppController],
   providers: [AppService, DbService],
