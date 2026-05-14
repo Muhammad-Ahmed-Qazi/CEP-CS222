@@ -9,6 +9,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { AdminModule } from './admin/admin.module';
 import { ReportsModule } from './reports/reports.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ReportsModule } from './reports/reports.module';
     TransactionsModule,
     ReportsModule,
     AdminModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, DbService],

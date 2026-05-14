@@ -7,10 +7,13 @@ import {
   Param,
   Body,
   UseGuards,
+  Post,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { AdminService } from './admin.service';
+import { CreateOperatorDto } from './dto/create-operator.dto';
+import * as bcrypt from 'bcrypt';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -38,5 +41,22 @@ export class AdminController {
   @Delete('users/:id')
   async deleteUser(@Param('id') id: string) {
     return this.adminService.deleteUser(id);
+  }
+
+  @Post('operators')
+  @UseGuards(AdminGuard)
+  async createOperator(@Body() body: CreateOperatorDto) {
+    const hashedPassword = await bcrypt.hash(body.password, 10);
+    // Service logic should handle the double insert into APP_USER then OPERATOR
+    return this.adminService.createOperator({
+      ...body,
+      password: hashedPassword,
+    });
+  }
+
+  @Get('operators')
+  @UseGuards(AdminGuard)
+  async getOperators() {
+    return this.adminService.getAllOperators(); // Joins APP_USER + OPERATOR + KIOSK
   }
 }

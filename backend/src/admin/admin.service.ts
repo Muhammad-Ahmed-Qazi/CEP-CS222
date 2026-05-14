@@ -1,13 +1,14 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { DbService } from '../db/db.service';
 import * as oracledb from 'oracledb';
+import { mapToCamelCase } from 'src/common/utils/mapper';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly dbService: DbService) {}
+  constructor(private readonly db: DbService) {}
 
   async getAllJobs(status?: string) {
-    const conn = await this.dbService.getConnection();
+    const conn = await this.db.getConnection();
     try {
       let sql = `
         SELECT pj.Job_ID as "jobId", pj.Document as "document", pj.Page_Count as "pageCount", 
@@ -38,7 +39,7 @@ export class AdminService {
   }
 
   async confirmHandover(jobId: string, kioskId: string, binId: string) {
-    const conn = await this.dbService.getConnection();
+    const conn = await this.db.getConnection();
     try {
       // 1. Update Status to Collected (Assuming ID 4 = Collected)
       await conn.execute(
@@ -70,7 +71,7 @@ export class AdminService {
   }
 
   async getUsers() {
-    const conn = await this.dbService.getConnection();
+    const conn = await this.db.getConnection();
     try {
       const sql = `
         SELECT 
@@ -98,7 +99,7 @@ export class AdminService {
       const result = await conn.execute(
         sql,
         {},
-        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
 
       return result.rows || [];
@@ -111,7 +112,7 @@ export class AdminService {
   }
 
   async deleteUser(userId: string) {
-    const conn = await this.dbService.getConnection();
+    const conn = await this.db.getConnection();
     try {
       await conn.execute(`DELETE FROM APP_USER WHERE User_ID = :userId`, {
         userId,
@@ -121,5 +122,49 @@ export class AdminService {
     } finally {
       await conn.close();
     }
+  }
+
+  async createOperator(data: any) {
+    return await this.db.executeInTransaction(async (conn) => {
+      // 1. Insert into APP_USER
+      const userRes = await conn.execute(
+        `INSERT INTO APP_USER (first_name, last_name, EMail, Password_Hash) 
+         VALUES (:firstName, :lastName, :email, :password) RETURNING User_ID INTO :id`,
+        {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          password: data.password, // Ensure this was hashed if necessary!
+          id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
+        },
+      );
+      const userId = (userRes.outBinds as any).id[0];
+
+      // 2. Insert into OPERATOR
+      await conn.execute(
+        `INSERT INTO OPERATOR (User_ID, Assigned_Kiosk) VALUES (:userId, :kiosk)`,
+        {
+          userId,
+          kiosk: data.assignedKiosk || null,
+        },
+      );
+
+      return { message: 'Operator created', userId };
+    });
+  }
+
+  async getAllOperators() {
+    const conn = await this.db.getConnection();
+    const result = await conn.execute(
+      `SELECT au.User_ID, au.first_name, au.last_name, au.EMail, 
+              o.Assigned_Kiosk, k.Location_Name as kiosk_location
+       FROM APP_USER au
+       JOIN OPERATOR o ON au.User_ID = o.User_ID
+       LEFT JOIN KIOSK k ON o.Assigned_Kiosk = k.Kiosk_ID`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT },
+    );
+    await conn.close();
+    return (result.rows || []).map(mapToCamelCase);
   }
 }

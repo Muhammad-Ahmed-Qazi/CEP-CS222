@@ -10,47 +10,41 @@ import {
 export class ReportsService {
   constructor(private readonly dbService: DbService) {}
 
+  /**
+   * Task 7: Refactor User Summary to use direct joins as per specification.
+   * This handles the aggregation of jobs, spend, and pages in a single query.
+   */
   async getUserSummary(userId?: number): Promise<UserSummaryReport[]> {
     const conn = await this.dbService.getConnection();
     try {
-      // Using CTEs (WITH clauses) to aggregate jobs and spending independently.
-      // This prevents row multiplication when joining across multiple tables.
+      // Base SQL from Task 7 with camelCase aliases for the frontend
       let sql = `
-        WITH UserJobs AS (
-          SELECT s.User_ID, COUNT(pj.Job_Id) as total_jobs, SUM(pj.Page_count) as total_pages
-          FROM SUBMITS s
-          JOIN PRINT_JOB pj ON s.Job_Id = pj.Job_Id
-          GROUP BY s.User_ID
-        ),
-        UserSpend AS (
-          SELECT ft.User_ID, SUM(ft.Amount) as total_spend
-          FROM FINANCIAL_TRANSACTION ft
-          WHERE LOWER(ft.transaction_type) = 'deduction'
-          GROUP BY ft.User_ID
-        )
         SELECT 
-          au.User_ID as "userId",
-          au.First_Name as "firstName",
-          au.Last_Name as "lastName",
-          au.Email as "email",
-          NVL(nu.Account_balance, 0) as "currentBalance",
-          NVL(uj.total_jobs, 0) as "totalJobs",
-          NVL(uj.total_pages, 0) as "totalPages",
-          NVL(us.total_spend, 0) as "totalSpend"
+            au.User_ID as "userId", 
+            au.first_name as "firstName", 
+            au.last_name as "lastName", 
+            au.EMail as "email",
+            nu.Account_balance as "currentBalance",
+            COUNT(DISTINCT s.Job_Id) as "totalJobs",
+            SUM(pj.total_cost) as "totalSpend",
+            SUM(pj.Page_count * pj.copies) as "totalPages"
         FROM APP_USER au
         LEFT JOIN NORMAL_USER nu ON au.User_ID = nu.User_ID
-        LEFT JOIN UserJobs uj ON au.User_ID = uj.User_ID
-        LEFT JOIN UserSpend us ON au.User_ID = us.User_ID
+        LEFT JOIN SUBMITS s ON au.User_ID = s.User_ID
+        LEFT JOIN PRINT_JOB pj ON s.Job_Id = pj.Job_Id
+        WHERE nu.User_ID IS NOT NULL
       `;
 
       const binds: any = {};
 
+      // Maintain the ability to filter by a specific user if provided
       if (userId) {
-        sql += ` WHERE au.User_ID = :userId`;
+        sql += ` AND au.User_ID = :userId`;
         binds.userId = userId;
-      } else {
-        sql += ` ORDER BY NVL(us.total_spend, 0) DESC`;
       }
+
+      sql += ` GROUP BY au.User_ID, au.first_name, au.last_name, au.EMail, nu.Account_balance`;
+      sql += ` ORDER BY "totalSpend" DESC NULLS LAST`;
 
       const result = await conn.execute<UserSummaryReport>(sql, binds, {
         outFormat: oracledb.OUT_FORMAT_OBJECT,
@@ -59,30 +53,29 @@ export class ReportsService {
       return result.rows || [];
     } catch (error) {
       console.error('Error generating user summary report:', error);
-      throw new InternalServerErrorException(
-        'Failed to generate user summary report',
-      );
+      throw new InternalServerErrorException('Failed to generate user summary report');
     } finally {
       await conn.close();
     }
   }
 
+  /**
+   * Task 1: Refactor to use V_DAILY_REPORT View.
+   * This view already aggregates the last 30 days of data.
+   */
   async getDailyReport(): Promise<DailySystemReport[]> {
     const conn = await this.dbService.getConnection();
     try {
+      // Assuming V_DAILY_REPORT columns: REPORT_DATE, TOTAL_JOBS, TOTAL_REVENUE, NORMAL_JOBS, BULK_JOBS
       const sql = `
         SELECT 
-          TO_CHAR(ft.Transaction_date, 'DD-MON-YYYY') as "date",
-          COUNT(pj.Job_Id) as "totalJobs",
-          SUM(ft.Amount) as "totalRevenue",
-          SUM(CASE WHEN LOWER(pj.job_type) = 'normal' THEN 1 ELSE 0 END) as "normalJobs",
-          SUM(CASE WHEN LOWER(pj.job_type) = 'bulk' THEN 1 ELSE 0 END) as "bulkJobs"
-        FROM FINANCIAL_TRANSACTION ft
-        JOIN GENERATES g ON ft.Transaction_ID = g.Transaction_ID
-        JOIN PRINT_JOB pj ON g.Job_Id = pj.Job_Id
-        WHERE ft.Transaction_date >= SYSDATE - 30
-        GROUP BY TO_CHAR(ft.Transaction_date, 'DD-MON-YYYY'), TRUNC(ft.Transaction_date)
-        ORDER BY TRUNC(ft.Transaction_date) DESC
+          REPORT_DATE as "date",
+          TOTAL_JOBS as "totalJobs",
+          TOTAL_REVENUE as "totalRevenue",
+          NORMAL_JOBS as "normalJobs",
+          BULK_JOBS as "bulkJobs"
+        FROM V_DAILY_REPORT
+        ORDER BY REPORT_DATE DESC
       `;
 
       const result = await conn.execute<DailySystemReport>(
@@ -93,7 +86,7 @@ export class ReportsService {
 
       return result.rows || [];
     } catch (error) {
-      console.error('Error generating daily system report:', error);
+      console.error('Error fetching daily report from view:', error);
       throw new InternalServerErrorException('Failed to generate daily report');
     } finally {
       await conn.close();
