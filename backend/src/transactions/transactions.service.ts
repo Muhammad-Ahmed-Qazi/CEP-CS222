@@ -1,10 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { DbService } from '../db/db.service';
 import * as oracledb from 'oracledb';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class TransactionsService {
-  constructor(private readonly dbService: DbService) {}
+  constructor(
+    private readonly dbService: DbService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async getHistory(userId: string) {
     const conn = await this.dbService.getConnection();
@@ -42,7 +46,7 @@ export class TransactionsService {
         SET Account_balance = Account_balance + :amount 
         WHERE User_ID = :userId`,
         { amount, userId },
-        { autoCommit: false } // We want to commit everything at once
+        { autoCommit: false },
       );
 
       // 2. Create the history record in the transaction table
@@ -65,32 +69,55 @@ export class TransactionsService {
         {
           amount,
           userId,
-          tid: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT }
+          tid: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
         },
-        { autoCommit: false }
+        { autoCommit: false },
       );
 
-      // 3. Commit both operations together
+      // 3. Commit both database operations together
       await conn.commit();
 
       const transactionId = result.outBinds.tid[0];
-      
-      // 4. Fetch the final balance to return to the frontend
+
+      // 4. Fetch the final balance to resolve dynamic template strings
       const balResult = await conn.execute<any>(
         `SELECT Account_balance as "newBalance" FROM NORMAL_USER WHERE User_ID = :userId`,
         { userId },
-        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
 
-      return { 
-        success: true, 
+      const newBalance = balResult.rows?.[0]?.newBalance ?? 0;
+
+      // 5. Convert userId string to number using Number() to satisfy NotificationsService type constraint
+      const numericUserId = Number(userId);
+
+      await this.notifications.createNotification(
+        numericUserId, // 👈 Fixed: passing number instead of string
+        'Balance Topped Up',
+        `PKR ${amount} has been added to your account. New balance: PKR ${newBalance}`,
+        'topup',
+      );
+
+      if (newBalance < 50) {
+        await this.notifications.createNotification(
+          numericUserId, // 👈 Fixed: passing number instead of string
+          'Low Balance',
+          'Your balance is below PKR 50. Please top up your account.',
+          'low_balance',
+        );
+      }
+
+      return {
+        success: true,
         transactionId,
-        newBalance: balResult.rows?.[0]?.newBalance 
+        newBalance,
       };
     } catch (err) {
-      // If anything fails, undo both the balance change and the record creation
       await conn.rollback();
-      throw new Error('Top-up failed and was rolled back.');
+      console.error('Top-up transaction failed:', err);
+      throw new InternalServerErrorException(
+        'Top-up failed and was rolled back.',
+      );
     } finally {
       await conn.close();
     }

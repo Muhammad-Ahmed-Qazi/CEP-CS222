@@ -6,6 +6,7 @@ import {
   UseGuards,
   ParseIntPipe,
   BadRequestException,
+  Request,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OperatorGuard } from '../auth/guards/operator.guard';
@@ -18,6 +19,7 @@ export class OperatorJobsController {
 
   @Patch(':id/status')
   async updateStatus(
+    @Request() req: any, // 👈 Make sure @Request() is injected here
     @Param('id', ParseIntPipe) id: number,
     @Body('status') status: string,
   ) {
@@ -27,6 +29,8 @@ export class OperatorJobsController {
         `Invalid status. Allowed: ${allowedStatuses.join(', ')}`,
       );
     }
-    return this.jobsService.updateJobStatus(id, status);
+    
+    // 👈 FIX: Add req.user.userId as the first parameter here
+    return this.jobsService.updateJobStatus(req.user.userId, id, status);
   }
 }

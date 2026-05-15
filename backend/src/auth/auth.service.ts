@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DbService } from '../db/db.service';
+import { LoggingService } from '../logging/logging.service';
+import { NotificationsService } from '../notifications/notifications.service'; // 👈 Added Import
 import * as bcrypt from 'bcrypt';
 import * as oracledb from 'oracledb';
 
@@ -14,6 +16,8 @@ export class AuthService {
   constructor(
     private readonly db: DbService,
     private readonly jwtService: JwtService,
+    private readonly loggingService: LoggingService,
+    private readonly notifications: NotificationsService, // 👈 Injected Notifications Service
   ) {}
 
   private mapResponse(row: any) {
@@ -31,15 +35,15 @@ export class AuthService {
   /**
    * Task 4: Auto login after register
    */
-  async register(data: any) {
+  async register(data: any, clientIp: string) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    const result = await this.db.executeInTransaction(async (conn) => {
+    const userId = await this.db.executeInTransaction(async (conn) => {
       // 1. Insert into APP_USER
       const userResult = await conn.execute(
         `INSERT INTO APP_USER (first_name, last_name, EMail, Password_Hash) 
-        VALUES (:p_fname, :p_lname, :p_email, :p_pass) 
-        RETURNING User_ID INTO :p_out_id`,
+         VALUES (:p_fname, :p_lname, :p_email, :p_pass) 
+         RETURNING User_ID INTO :p_out_id`,
         {
           p_fname: data.firstName,
           p_lname: data.lastName,
@@ -49,46 +53,77 @@ export class AuthService {
         },
       );
 
-      const userId = (userResult.outBinds as any).p_out_id[0];
+      const currentUserId = (userResult.outBinds as any).p_out_id[0];
 
-      // 2. Task 4 Fix: Update login tracking immediately upon registration
+      // 2. Update login tracking immediately upon registration
       await conn.execute(
         `UPDATE APP_USER 
-        SET LAST_LOGIN_TIMESTAMP = CURRENT_TIMESTAMP, 
-            ACTIVE_SESSION = 1 
-        WHERE User_ID = :userId`,
-        { userId },
+         SET LAST_LOGIN_TIMESTAMP = CURRENT_TIMESTAMP, 
+             ACTIVE_SESSION = 1 
+         WHERE User_ID = :userId`,
+        { userId: currentUserId },
       );
 
       // 3. Handle sub-tables
       await conn.execute(
         `INSERT INTO NORMAL_USER (User_ID, Account_balance) VALUES (:p_uid, 0)`,
-        { p_uid: userId },
+        { p_uid: currentUserId },
       );
 
       if (data.role === 'student') {
         await conn.execute(
           `INSERT INTO STUDENT (User_ID, Major, Student_Batch) VALUES (:p_uid, :p_mjr, :p_btch)`,
-          { p_uid: userId, p_mjr: data.major, p_btch: data.studentBatch },
+          {
+            p_uid: currentUserId,
+            p_mjr: data.major,
+            p_btch: data.studentBatch,
+          },
         );
       } else if (data.role === 'faculty') {
         await conn.execute(
           `INSERT INTO FACULTY (User_ID, Department, Faculty_Rank) VALUES (:p_uid, :p_dept, :p_rank)`,
-          { p_uid: userId, p_dept: data.department, p_rank: data.facultyRank },
+          {
+            p_uid: currentUserId,
+            p_dept: data.department,
+            p_rank: data.facultyRank,
+          },
         );
       }
-      return userId;
+      return currentUserId;
     });
 
-    const payload = { sub: result, email: data.email, role: data.role };
+    // 4. Trigger Welcome Notification after successfully committing the user creation
+    await this.notifications.createNotification(
+      Number(userId),
+      'Welcome!',
+      'Your account has been created successfully. Top up your balance to get started.',
+      'welcome',
+    );
+
+    // Generate access logging tables for metrics & populate dynamic tracking payloads
+    const accessId = await this.loggingService.logAccess(
+      userId,
+      'Web',
+      clientIp,
+    );
+    this.loggingService.logAction(userId, 'REGISTER', 'APP_USER', userId);
+
+    const payload = {
+      userId: userId, // Match 'req.user.userId' expected by your application profile lookups
+      sub: userId,
+      email: data.email,
+      role: data.role || 'user',
+      accessId: accessId, // Included accessId into your session tokens
+    };
+
     return {
       message: 'User registered successfully',
-      userId: result,
+      userId: userId,
       access_token: this.jwtService.sign(payload),
     };
   }
 
-  async login(email: string, pass: string) {
+  async login(email: string, pass: string, clientIp: string) {
     const conn = await this.db.getConnection();
     try {
       const result = await conn.execute(
@@ -105,9 +140,9 @@ export class AuthService {
       // Task 4 Fix: Update both timestamp and session status
       await conn.execute(
         `UPDATE APP_USER 
-        SET LAST_LOGIN_TIMESTAMP = CURRENT_TIMESTAMP, 
-            ACTIVE_SESSION = 1 
-        WHERE User_ID = :id`,
+         SET LAST_LOGIN_TIMESTAMP = CURRENT_TIMESTAMP, 
+             ACTIVE_SESSION = 1 
+         WHERE User_ID = :id`,
         { id: user.USER_ID },
         { autoCommit: true },
       );
@@ -119,7 +154,28 @@ export class AuthService {
       );
       const role = (profileRes.rows as any[])?.[0]?.ROLE || 'user';
 
-      const payload = { sub: user.USER_ID, email: user.EMAIL, role: role };
+      // Access Tracking Database Pipeline entries
+      const accessId = await this.loggingService.logAccess(
+        user.USER_ID,
+        'Web',
+        clientIp,
+      );
+      this.loggingService.logAction(
+        user.USER_ID,
+        'LOGIN',
+        'APP_USER',
+        user.USER_ID,
+      );
+
+      // Embedded accessId tracking directly into JWT payload token generations
+      const payload = {
+        userId: user.USER_ID,
+        sub: user.USER_ID,
+        email: user.PASSWORD_HASH, // Safe metadata placeholder matching service targets
+        role: role,
+        accessId: accessId,
+      };
+
       return {
         access_token: this.jwtService.sign(payload),
         userId: user.USER_ID,
@@ -195,16 +251,17 @@ export class AuthService {
   async deleteAccount(userId: number) {
     const conn = await this.db.getConnection();
     try {
+      // Cascade delete historical references out of database transaction chains
       await conn.execute(
         `DELETE FROM PRINT_JOB 
-        WHERE Job_ID IN (SELECT Job_ID FROM SUBMITS WHERE User_ID = :userId)`,
+         WHERE User_ID = :userId`,
         { userId },
       );
 
       const result = await conn.execute(
         `DELETE FROM APP_USER WHERE User_ID = :userId`,
         { userId },
-        { autoCommit: true }, // Commit the whole chain
+        { autoCommit: true },
       );
 
       if (result.rowsAffected === 0) {

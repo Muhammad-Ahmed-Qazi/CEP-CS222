@@ -8,17 +8,22 @@ import {
   Body,
   UseGuards,
   Post,
+  Req,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { AdminService } from './admin.service';
 import { CreateOperatorDto } from './dto/create-operator.dto';
+import { LoggingService } from '../logging/logging.service';
 import * as bcrypt from 'bcrypt';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly loggingService: LoggingService, // 👈 Injected Logging Service
+  ) {}
 
   @Get('jobs')
   async getJobs(@Query('status') status?: string) {
@@ -39,24 +44,85 @@ export class AdminController {
   }
 
   @Delete('users/:id')
-  async deleteUser(@Param('id') id: string) {
-    return this.adminService.deleteUser(id);
+  async deleteUser(@Param('id') id: string, @Req() req: any) {
+    // 1. Fetch user data before deletion to extract email details for audit trail
+    const userToDelete = await this.adminService.getUserById(id);
+
+    // 2. Perform database deletion
+    const result = await this.adminService.deleteUser(id);
+
+    // 3. Log the audit entry: logAction(adminId, action, targetTable, targetId, detail)
+    await this.loggingService.logAction(
+      req.userId,
+      'ADMIN_DELETE_USER',
+      'APP_USER',
+      id,
+      userToDelete?.email || 'Unknown Email',
+    );
+
+    return result;
   }
 
   @Post('operators')
   @UseGuards(AdminGuard)
-  async createOperator(@Body() body: CreateOperatorDto) {
+  async createOperator(@Body() body: CreateOperatorDto, @Req() req: any) {
     const hashedPassword = await bcrypt.hash(body.password, 10);
-    // Service logic should handle the double insert into APP_USER then OPERATOR
-    return this.adminService.createOperator({
+    const result = await this.adminService.createOperator({
       ...body,
       password: hashedPassword,
     });
+
+    // Log operator creation tracking the generated outBind ID
+    await this.loggingService.logAction(
+      req.user.sub,
+      'CREATE_OPERATOR',
+      'OPERATOR',
+      result.userId.toString(),
+    );
+
+    return result;
   }
 
   @Get('operators')
   @UseGuards(AdminGuard)
   async getOperators() {
-    return this.adminService.getAllOperators(); // Joins APP_USER + OPERATOR + KIOSK
+    return this.adminService.getAllOperators();
+  }
+
+  // Adding endpoints to match your logging architecture rules
+  @Post('kiosks')
+  @UseGuards(AdminGuard)
+  async createKiosk(
+    @Body() body: { locationName: string; status: string },
+    @Req() req: any,
+  ) {
+    const result = await this.adminService.createKiosk(
+      body.locationName,
+      body.status,
+    );
+
+    await this.loggingService.logAction(
+      req.user.sub,
+      'CREATE_KIOSK',
+      'KIOSK',
+      result.kioskId.toString(),
+    );
+
+    return result;
+  }
+
+  @Delete('kiosks/:id')
+  @UseGuards(AdminGuard)
+  async deleteKiosk(@Param('id') id: string, @Req() req: any) {
+    const result = await this.adminService.deleteKiosk(id);
+
+    await this.loggingService.logAction(
+      req.user.sub,
+      'DELETE_KIOSK',
+      'KIOSK',
+      id,
+    );
+
+    return result;
   }
 }

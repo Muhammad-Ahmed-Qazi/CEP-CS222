@@ -10,12 +10,14 @@ import { NotificationsService } from '../notifications/notifications.service';
 import * as oracledb from 'oracledb';
 import { v4 as uuidv4 } from 'uuid';
 import { calculateJobDetails, PricingParams } from './pricing.engine';
+import { LoggingService } from 'src/logging/logging.service';
 
 @Injectable()
 export class JobsService {
   constructor(
     private readonly db: DbService,
     private readonly notificationsService: NotificationsService,
+    private readonly loggingService: LoggingService,
   ) {}
 
   /**
@@ -52,14 +54,13 @@ export class JobsService {
       };
 
       // 2. Call the Pricing Engine
-      // This replaces the SQL query to PRICE_RATE and manual math
       const pricing = calculateJobDetails(pricingParams);
 
       // Derived values for the Stored Procedure
       const priority = role === 'faculty' ? 2 : 1;
       const qrToken = uuidv4();
-      // Calculate price per page for the DB record (total / pages * copies)
-      const pricePerPage = pricing.totalCost / (pricingParams.pages * pricingParams.copies);
+      const pricePerPage =
+        pricing.totalCost / (pricingParams.pages * pricingParams.copies);
 
       // 3. Check balance before calling SP
       const balanceRes = await conn.execute(
@@ -78,7 +79,6 @@ export class JobsService {
       }
 
       // 4. Call SP_SUBMIT_JOB
-      // Note: We use pricing.calculatedSlot and pricing.expiryTime from the engine
       const result = await conn.execute(
         `BEGIN 
             SP_SUBMIT_JOB(
@@ -96,13 +96,13 @@ export class JobsService {
           p_job_type: pricingParams.jobType,
           p_print_mode: pricingParams.printMode,
           p_print_side: pricingParams.printSide,
-          p_collection_slot: pricing.calculatedSlot, // Use the engine-validated slot
+          p_collection_slot: pricing.calculatedSlot,
           p_description: jobData.description || null,
           p_qr_token: qrToken,
           p_priority: priority,
           p_price_per_page: pricePerPage,
           p_total_cost: pricing.totalCost,
-          p_expiry_time: pricing.expiryTime, // Use the engine-calculated expiry
+          p_expiry_time: pricing.expiryTime,
           p_job_id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
           p_new_balance: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
         },
@@ -110,19 +110,28 @@ export class JobsService {
       );
 
       const outBinds = result.outBinds as any;
+      const newBalance = outBinds.p_new_balance[0];
 
-      /* 
-        NOTE: We do NOT call notificationService here because we discovered 
-        earlier that the Stored Procedure handles its own notification insert.
-      */
+      // 5. Post-Commit Low Balance Warning Check
+      if (newBalance < 50) {
+        await this.notificationsService.createNotification(
+          Number(userId),
+          'Low Balance Warning',
+          'Your balance is below PKR 50. Top up soon to continue printing.',
+          'low_balance',
+        );
+      }
 
       return {
         message: 'Job submitted successfully',
         jobId: outBinds.p_job_id[0],
         qrToken: qrToken,
         totalCost: pricing.totalCost,
-        newBalance: outBinds.p_new_balance[0],
-        estimatedTime: pricingParams.jobType === 'bulk' ? 'By tomorrow 10:30 AM' : '5-10 minutes',
+        newBalance: newBalance,
+        estimatedTime:
+          pricingParams.jobType === 'bulk'
+            ? 'By tomorrow 10:30 AM'
+            : '5-10 minutes',
       };
     } catch (error) {
       console.error('Submit Job Error:', error);
@@ -245,7 +254,7 @@ export class JobsService {
 
       // 6. Notify
       await this.notificationsService.createNotification(
-        userId,
+        Number(userId),
         'Job Cancelled',
         `Your print job #${jobId} has been cancelled and PKR ${cost} has been refunded`,
         'job_cancelled',
@@ -292,7 +301,6 @@ export class JobsService {
       };
 
       // 3. Call the Pricing Engine
-      // This validates the new slot and calculates the new expiry/cost
       const pricing = calculateJobDetails(pricingParams);
 
       // 4. Fetch user profile for priority
@@ -310,16 +318,18 @@ export class JobsService {
         { userId },
         { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
-      const currentBalance = (balanceRes.rows as any[])?.[0]?.ACCOUNT_BALANCE || 0;
+      const currentBalance =
+        (balanceRes.rows as any[])?.[0]?.ACCOUNT_BALANCE || 0;
 
       if (pricing.totalCost > currentBalance) {
         throw new BadRequestException(
-          `Insufficient balance for reprint. Required: Rs. ${pricing.totalCost}, Available: Rs. ${currentBalance}`
+          `Insufficient balance for reprint. Required: Rs. ${pricing.totalCost}, Available: Rs. ${currentBalance}`,
         );
       }
 
       const qrToken = uuidv4();
-      const pricePerPage = pricing.totalCost / (pricingParams.pages * pricingParams.copies);
+      const pricePerPage =
+        pricing.totalCost / (pricingParams.pages * pricingParams.copies);
 
       // 6. Submit via SP
       const spResult = await conn.execute(
@@ -333,7 +343,7 @@ export class JobsService {
         END;`,
         {
           p_user_id: userId,
-          p_document: job.DOCUMENT, // Reuse old file path
+          p_document: job.DOCUMENT,
           p_page_count: pricingParams.pages,
           p_copies: pricingParams.copies,
           p_job_type: pricingParams.jobType,
@@ -353,6 +363,17 @@ export class JobsService {
       );
 
       const outBinds = spResult.outBinds as any;
+      const newBalance = outBinds.p_new_balance[0];
+
+      // 7. Post-Commit Reprint Low Balance Warning Check
+      if (newBalance < 50) {
+        await this.notificationsService.createNotification(
+          Number(userId),
+          'Low Balance Warning',
+          'Your balance is below PKR 50. Top up soon to continue printing.',
+          'low_balance',
+        );
+      }
 
       return {
         message: 'Job reprinted successfully',
@@ -372,7 +393,7 @@ export class JobsService {
   /**
    * Task 3: Operator Job Status Update
    */
-  async updateJobStatus(jobId: number, newStatus: string) {
+  async updateJobStatus(operatorId: number, jobId: number, newStatus: string) {
     const conn = await this.db.getConnection();
     try {
       const jobRes = await conn.execute(
@@ -394,7 +415,7 @@ export class JobsService {
       if (currentStatus === 'Printing' && newStatus === 'Binned')
         isValid = true;
       if (currentStatus === 'Pending' && newStatus === 'Discarded')
-        isValid = true; // Manual operator discard
+        isValid = true;
       if (currentStatus === 'Binned' && newStatus === 'Discarded') {
         const expiry = new Date(job.EXPIRY_TIME);
         if (new Date() < expiry) {
@@ -414,8 +435,8 @@ export class JobsService {
       // Execute Update
       await conn.execute(
         `UPDATE HAS_STATUS 
-         SET Status_ID = (SELECT Status_ID FROM JOB_STATUS WHERE Status_Name = :newStatus) 
-         WHERE Job_Id = :jobId`,
+        SET Status_ID = (SELECT Status_ID FROM JOB_STATUS WHERE Status_Name = :newStatus) 
+        WHERE Job_Id = :jobId`,
         { newStatus, jobId },
       );
 
@@ -426,12 +447,23 @@ export class JobsService {
         });
       }
 
+      // Commit changes safely to the database
       await conn.commit();
+
+      // 👈 Audit log state modification after successful commit
+      await this.loggingService.logAction(
+        operatorId,
+        'STATUS_UPDATE',
+        'PRINT_JOB',
+        String(jobId), // Explicitly cast to string for schema layout safety
+        currentStatus, // Captured before execution
+        newStatus,
+      );
 
       // Trigger appropriate notifications
       if (newStatus === 'Printing') {
         await this.notificationsService.createNotification(
-          userId,
+          Number(userId),
           'Printing Started',
           `Your print job #${jobId} is now being printed.`,
           'job_printing',
@@ -439,7 +471,7 @@ export class JobsService {
         );
       } else if (newStatus === 'Binned') {
         await this.notificationsService.createNotification(
-          userId,
+          Number(userId),
           'Ready for Collection',
           `Your print job #${jobId} is ready at the kiosk. You have 2 hours to collect it.`,
           'job_binned',
@@ -447,7 +479,7 @@ export class JobsService {
         );
       } else if (newStatus === 'Discarded') {
         await this.notificationsService.createNotification(
-          userId,
+          Number(userId),
           'Job Discarded',
           `Your print job #${jobId} was discarded. No refund is issued.`,
           'job_discarded',
@@ -459,6 +491,42 @@ export class JobsService {
     } catch (error) {
       await conn.rollback();
       throw error;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  // --- TASK 5: Retrieve QR Token for User ---
+  async getJobQr(userId: number, jobId: number) {
+    const conn = await this.db.getConnection();
+    try {
+      const result = await conn.execute(
+        `SELECT j.QR_Secure_Token, pi.Bin_ID, pi.Kiosk_ID, k.Location_name, 
+                v.Collection_slot, v.Expiry_time, v.Status_Name
+         FROM PRINT_JOB j
+         JOIN SUBMITS s ON j.Job_ID = s.Job_ID
+         JOIN V_JOB_DETAILS v ON j.Job_ID = v.Job_ID
+         LEFT JOIN PLACED_IN pi ON j.Job_ID = pi.Job_ID
+         LEFT JOIN KIOSK k ON pi.Kiosk_ID = k.Kiosk_ID
+         WHERE j.Job_ID = :jobId AND s.User_ID = :userId`,
+        { jobId, userId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      const row: any = (result.rows as any[])[0];
+      if (!row) throw new NotFoundException('Job not found or unauthorized');
+
+      const isBinned = row.STATUS_NAME === 'Binned';
+
+      return {
+        jobId,
+        qrToken: row.QR_SECURE_TOKEN,
+        binId: isBinned ? row.BIN_ID : null,
+        kioskId: isBinned ? row.KIOSK_ID : null,
+        locationName: isBinned ? row.LOCATION_NAME : null,
+        collectionSlot: row.COLLECTION_SLOT,
+        expiryTime: row.EXPIRY_TIME,
+      };
     } finally {
       await conn.close();
     }

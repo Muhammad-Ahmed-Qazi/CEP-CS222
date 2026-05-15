@@ -9,9 +9,9 @@ import {
   Request,
   Param,
   Delete,
-  Patch,
   ParseIntPipe,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -116,5 +116,10 @@ export class JobsController {
   ) {
     if (!collectionSlot) throw new BadRequestException('collectionSlot is required for reprinting');
     return this.jobsService.reprintJob(id, req.user.userId, collectionSlot);
+  }
+
+  @Get(':id/qr')
+  async getJobQr(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.jobsService.getJobQr(req.user.userId, id);
   }
 }

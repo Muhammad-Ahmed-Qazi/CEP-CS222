@@ -12,6 +12,7 @@ import { ReportsModule } from './reports/reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { KioskModule } from './kiosk/kiosk.module';
 import { OperatorModule } from './operator/operator.module';
+import { LoggingModule } from './logging/logging.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { OperatorModule } from './operator/operator.module';
     NotificationsModule,
     KioskModule,
     OperatorModule,
+    LoggingModule,
   ],
   controllers: [AppController],
   providers: [AppService, DbService],

@@ -2,16 +2,30 @@ import {
   Injectable,
   BadRequestException,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { DbService } from '../db/db.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { LoggingService } from '../logging/logging.service';
 import * as oracledb from 'oracledb';
+
+interface JobRow {
+  PAGE_COUNT: number;
+  COPIES: number;
+  JOB_ID?: number;
+}
+
+interface BinRow {
+  MAX_PAGE_CAPACITY: number;
+  USED_PAGES: number;
+}
 
 @Injectable()
 export class OperatorService {
   constructor(
     private readonly db: DbService,
     private readonly notifications: NotificationsService,
+    private readonly loggingService: LoggingService,
   ) {}
 
   private async getAssignedKiosk(
@@ -23,29 +37,44 @@ export class OperatorService {
       { userId },
       { outFormat: oracledb.OUT_FORMAT_OBJECT },
     );
-    const rows = result.rows as any[];
-    return rows.length > 0 ? rows[0].ASSIGNED_KIOSK : null;
+    const rows = result.rows as Record<string, unknown>[];
+    return rows.length > 0 ? (rows[0].ASSIGNED_KIOSK as number) : null;
   }
 
+  // --- Helper: Get Current Status ---
+  async getJobCurrentStatus(jobId: number): Promise<string> {
+    const conn = await this.db.getConnection();
+    try {
+      const result = await conn.execute(
+        `SELECT Status_Name FROM V_JOB_DETAILS WHERE Job_ID = :jobId`,
+        { jobId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const rows = result.rows as any[];
+      return rows.length > 0 ? rows[0].STATUS_NAME : 'Unknown';
+    } finally {
+      await conn.close();
+    }
+  }
+
+  // --- GET: Operator Queue ---
   async getQueue(userId: number) {
     const conn = await this.db.getConnection();
     try {
       const kioskId = await this.getAssignedKiosk(conn, userId);
-      let query = `SELECT * FROM V_JOB_DETAILS WHERE Status_Name IN ('Pending', 'Printing')`;
-      const binds: Record<string, any> = {};
+      const query = `
+        SELECT * FROM V_JOB_DETAILS 
+        WHERE Status_Name IN ('Pending', 'Printing')
+        ORDER BY Priority_level DESC, Collection_slot ASC
+      `;
+      const result = await conn.execute(
+        query,
+        {},
+        {
+          outFormat: oracledb.OUT_FORMAT_OBJECT,
+        },
+      );
 
-      if (kioskId) {
-        // Assuming jobs belong to a kiosk conceptually or all pending jobs are returned to all operators if not bound.
-        // Usually, jobs are assigned to bins/kiosks later, so pending jobs might be global until printed.
-        // We will fetch all relevant ones based on requirement.
-      }
-
-      query += ` ORDER BY Priority_level DESC, Collection_slot ASC`;
-      const result = await conn.execute(query, binds, {
-        outFormat: oracledb.OUT_FORMAT_OBJECT,
-      });
-
-      // Basic camelCase mapper
       return (result.rows as Record<string, unknown>[]).map((row) => {
         const obj: any = {};
         for (const key in row) {
@@ -61,6 +90,7 @@ export class OperatorService {
     }
   }
 
+  // --- GET: Kiosk Bins (Updated with used_pages) ---
   async getBins(userId: number) {
     const conn = await this.db.getConnection();
     try {
@@ -69,82 +99,154 @@ export class OperatorService {
         throw new BadRequestException('No kiosk assigned to operator');
 
       const result = await conn.execute(
-        `SELECT b.Kiosk_ID, b.Bin_ID, b.Max_page_capacity, b.Bin_status, 
-                p.Job_ID as current_job_id, v.Status_Name as current_job_status
+        `SELECT b.Kiosk_ID, b.Bin_ID, b.Max_page_capacity, b.used_pages, b.Bin_status
          FROM COLLECTION_BINS b
-         LEFT JOIN PLACED_IN p ON b.Kiosk_ID = p.Kiosk_ID AND b.Bin_ID = p.Bin_ID
-         LEFT JOIN V_JOB_DETAILS v ON p.Job_ID = v.Job_ID
          WHERE b.Kiosk_ID = :kioskId`,
         { kioskId },
         { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
+
       return (result.rows as Record<string, unknown>[]).map((row) => ({
         kioskId: row.KIOSK_ID as number,
         binId: row.BIN_ID as string,
         maxPageCapacity: row.MAX_PAGE_CAPACITY as number,
+        usedPages: row.USED_PAGES as number,
+        remainingCapacity:
+          (row.MAX_PAGE_CAPACITY as number) - (row.USED_PAGES as number),
         binStatus: row.BIN_STATUS as string,
-        currentJobId: row.CURRENT_JOB_ID as number | null,
-        currentJobStatus: row.CURRENT_JOB_STATUS as string | null,
       }));
     } finally {
       await conn.close();
     }
   }
 
-  async updateBin(userId: number, binId: string, binStatus: string) {
-    const conn = await this.db.getConnection();
-    try {
-      const kioskId = await this.getAssignedKiosk(conn, userId);
-      if (!kioskId) throw new BadRequestException('No kiosk assigned');
-
-      await conn.execute(
-        `UPDATE COLLECTION_BINS SET Bin_status = :status WHERE Kiosk_ID = :kioskId AND Bin_ID = :binId`,
-        { status: binStatus, kioskId, binId },
-        { autoCommit: true },
-      );
-      return { message: 'Bin updated', kioskId, binId, binStatus };
-    } finally {
-      await conn.close();
-    }
-  }
-
+  // --- TASK 1: Assign Bin with Capacity Tracking ---
   async assignBin(userId: number, jobId: number, binId: string) {
+    const oldStatus = await this.getJobCurrentStatus(jobId);
     const conn = await this.db.getConnection();
     try {
       const kioskId = await this.getAssignedKiosk(conn, userId);
       if (!kioskId) throw new BadRequestException('No kiosk assigned');
+
+      // 1. Calculate effective pages
+      const jobRes = await conn.execute(
+        `SELECT Page_count, copies FROM PRINT_JOB WHERE Job_ID = :jobId`,
+        { jobId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const jobRow = (jobRes.rows as JobRow[])[0];
+      if (!jobRow) throw new NotFoundException('Job not found');
+
+      const effectivePages = jobRow.PAGE_COUNT * jobRow.COPIES;
+
+      // 2. Lock and check bin capacity
+      const binRes = await conn.execute(
+        `SELECT Max_page_capacity, used_pages FROM COLLECTION_BINS 
+         WHERE Kiosk_ID = :kioskId AND Bin_ID = :binId FOR UPDATE`,
+        { kioskId, binId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const binRow = (binRes.rows as BinRow[])[0];
+      if (!binRow) throw new NotFoundException('Bin not found');
+
+      if (binRow.USED_PAGES + effectivePages > binRow.MAX_PAGE_CAPACITY) {
+        throw new BadRequestException(
+          'Bin does not have sufficient capacity for this job',
+        );
+      }
+
+      // 3. Execute Updates in Transaction
+      await conn.execute(
+        `UPDATE COLLECTION_BINS SET used_pages = used_pages + :effectivePages 
+         WHERE Kiosk_ID = :kioskId AND Bin_ID = :binId`,
+        { effectivePages, kioskId, binId },
+        { autoCommit: false },
+      );
 
       await conn.execute(
         `INSERT INTO PLACED_IN (Job_ID, Kiosk_ID, Bin_ID) VALUES (:jobId, :kioskId, :binId)`,
         { jobId, kioskId, binId },
         { autoCommit: false },
       );
+
       await conn.execute(
-        `UPDATE COLLECTION_BINS SET Bin_status = 'occupied' WHERE Kiosk_ID = :kioskId AND Bin_ID = :binId`,
-        { kioskId, binId },
+        `UPDATE KIOSK SET Current_load = Current_load + :effectivePages WHERE Kiosk_ID = :kioskId`,
+        { effectivePages, kioskId },
         { autoCommit: false },
       );
+
       await conn.execute(
-        `UPDATE KIOSK SET Current_load = Current_load + 1 WHERE Kiosk_ID = :kioskId`,
-        { kioskId },
+        `UPDATE HAS_STATUS 
+          SET Status_ID = (SELECT Status_ID FROM JOB_STATUS WHERE Status_Name = 'Printing')
+          WHERE Job_ID = :jobId`,
+        { jobId },
         { autoCommit: false },
       );
 
       await conn.commit();
-      return { message: 'Job assigned to bin', kioskId, binId, jobId };
+
+      await this.loggingService.logAction(
+        userId,
+        'STATUS_UPDATE',
+        'PRINT_JOB',
+        String(jobId),
+        oldStatus,
+        'Printing',
+      );
+      return {
+        message: 'Job assigned to bin',
+        kioskId,
+        binId,
+        jobId,
+        effectivePages,
+      };
     } catch (e) {
       await conn.rollback();
-      throw new InternalServerErrorException(e.message);
+      throw e instanceof BadRequestException || e instanceof NotFoundException
+        ? e
+        : new InternalServerErrorException(e.message);
     } finally {
       await conn.close();
     }
   }
 
-  async handoverJob(userId: number, jobId: number, binId: string) {
+  // --- TASK 2: Handover Job (Release Capacity) ---
+  async handoverJob(userId: number, jobId: number) {
     const conn = await this.db.getConnection();
     try {
       const kioskId = await this.getAssignedKiosk(conn, userId);
       if (!kioskId) throw new BadRequestException('No kiosk assigned');
+
+      const placementRes = await conn.execute(
+        `SELECT pj.Page_count, pj.copies, pi.Bin_ID 
+         FROM PRINT_JOB pj 
+         JOIN PLACED_IN pi ON pj.Job_ID = pi.Job_ID 
+         WHERE pj.Job_ID = :jobId AND pi.Kiosk_ID = :kioskId FOR UPDATE`,
+        { jobId, kioskId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+
+      const row = (placementRes.rows as any[])[0];
+      if (!row)
+        throw new NotFoundException(
+          'Job not found in your assigned kiosk bins',
+        );
+
+      const effectivePages = row.PAGE_COUNT * row.COPIES;
+      const binId = row.BIN_ID;
+
+      await conn.execute(
+        `UPDATE COLLECTION_BINS SET used_pages = used_pages - :effectivePages 
+         WHERE Kiosk_ID = :kioskId AND Bin_ID = :binId`,
+        { effectivePages, kioskId, binId },
+        { autoCommit: false },
+      );
+
+      await conn.execute(
+        `UPDATE KIOSK SET Current_load = Current_load - :effectivePages WHERE Kiosk_ID = :kioskId`,
+        { effectivePages, kioskId },
+        { autoCommit: false },
+      );
 
       await conn.execute(
         `BEGIN SP_CONFIRM_HANDOVER(:jobId, :kioskId, :binId); END;`,
@@ -152,96 +254,190 @@ export class OperatorService {
         { autoCommit: false },
       );
 
-      await conn.execute(
-        `UPDATE COLLECTION_BINS SET Bin_status = 'available' WHERE Kiosk_ID = :kioskId AND Bin_ID = :binId`,
-        { kioskId, binId },
-        { autoCommit: false },
-      );
-      await conn.execute(
-        `UPDATE KIOSK SET Current_load = Current_load - 1 WHERE Kiosk_ID = :kioskId`,
-        { kioskId },
-        { autoCommit: false },
-      );
-
       await conn.commit();
-      return { message: 'Handover confirmed', jobId };
+      await this.loggingService.logAction(
+        userId,
+        'JOB_COLLECTED',
+        'PRINT_JOB',
+        String(jobId),
+      );
+      return {
+        message: 'Handover confirmed',
+        jobId,
+        releasedPages: effectivePages,
+      };
     } catch (e) {
       await conn.rollback();
-      throw new InternalServerErrorException(e.message);
+      throw e instanceof BadRequestException || e instanceof NotFoundException
+        ? e
+        : new InternalServerErrorException(e.message);
     } finally {
       await conn.close();
     }
   }
 
+  // --- TASK 2: Discard Job (Release Capacity) ---
   async discardJob(userId: number, jobId: number) {
     const conn = await this.db.getConnection();
     try {
       const kioskId = await this.getAssignedKiosk(conn, userId);
 
-      // Get Job owner ID to notify
-      const jobOwnerRes = await conn.execute(
-        `SELECT User_ID FROM SUBMITS WHERE Job_ID = :jobId`,
-        { jobId },
+      const placementRes = await conn.execute(
+        `SELECT pj.Page_count, pj.copies, pi.Bin_ID, s.User_ID as OWNER_ID
+         FROM PRINT_JOB pj 
+         JOIN PLACED_IN pi ON pj.Job_ID = pi.Job_ID 
+         JOIN SUBMITS s ON pj.Job_ID = s.Job_ID
+         WHERE pj.Job_ID = :jobId AND pi.Kiosk_ID = :kioskId FOR UPDATE`,
+        { jobId, kioskId },
         { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
-      const ownerId = (jobOwnerRes.rows as any[])[0]?.USER_ID;
 
-      // Status mapping: Assuming Discarded has a Status_ID, typically we insert into HAS_STATUS
-      // Here using a direct update or inserting a new record into HAS_STATUS
+      const row = (placementRes.rows as any[])[0];
+      if (!row) throw new NotFoundException('Job not found in kiosk bins');
+
+      const effectivePages = row.PAGE_COUNT * row.COPIES;
+      const binId = row.BIN_ID;
+      const ownerId = row.OWNER_ID;
+
       await conn.execute(
-        `INSERT INTO HAS_STATUS (Job_ID, Status_ID) 
-         SELECT :jobId, Status_ID FROM JOB_STATUS WHERE Status_name = 'Discarded'`,
+        `UPDATE COLLECTION_BINS SET used_pages = used_pages - :effectivePages 
+         WHERE Kiosk_ID = :kioskId AND Bin_ID = :binId`,
+        { effectivePages, kioskId, binId },
+        { autoCommit: false },
+      );
+
+      await conn.execute(
+        `UPDATE KIOSK SET Current_load = Current_load - :effectivePages WHERE Kiosk_ID = :kioskId`,
+        { effectivePages, kioskId },
+        { autoCommit: false },
+      );
+
+      await conn.execute(
+        `DELETE FROM PLACED_IN WHERE Job_ID = :jobId`,
         { jobId },
         { autoCommit: false },
       );
 
-      // Check if it was in a bin to clean up
-      const binCheck = await conn.execute(
-        `SELECT Bin_ID FROM PLACED_IN WHERE Job_ID = :jobId AND Kiosk_ID = :kioskId`,
-        { jobId, kioskId },
-        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      await conn.execute(
+        `UPDATE HAS_STATUS 
+          SET Status_ID = (SELECT Status_ID FROM JOB_STATUS WHERE Status_Name = 'Discarded')
+          WHERE Job_ID = :jobId`,
+        { jobId },
+        { autoCommit: false },
       );
-      if (binCheck.rows && binCheck.rows.length > 0) {
-        const binId = (binCheck.rows as any[])[0].BIN_ID;
-        await conn.execute(
-          `DELETE FROM PLACED_IN WHERE Job_ID = :jobId`,
-          { jobId },
-          { autoCommit: false },
-        );
-        await conn.execute(
-          `UPDATE COLLECTION_BINS SET Bin_status = 'available' WHERE Kiosk_ID = :kioskId AND Bin_ID = :binId`,
-          { kioskId, binId },
-          { autoCommit: false },
-        );
-        await conn.execute(
-          `UPDATE KIOSK SET Current_load = Current_load - 1 WHERE Kiosk_ID = :kioskId`,
-          { kioskId },
-          { autoCommit: false },
-        );
-      }
 
       await conn.commit();
+      await this.loggingService.logAction(
+        userId,
+        'JOB_DISCARDED',
+        'PRINT_JOB',
+        String(jobId),
+      );
 
       if (ownerId) {
-        // Pass arguments positionally: userId, title, message, type, jobId
         await this.notifications.createNotification(
           ownerId,
           'Job Discarded',
-          `Your print job #${jobId} was not collected in time and has been discarded.`,
+          `Your print job #${jobId} was discarded.`,
           'job_discarded',
-          jobId, // This matches the 5th optional argument
+          jobId,
         );
       }
 
-      return { message: 'Job discarded', jobId };
+      return { message: 'Job discarded', jobId, releasedPages: effectivePages };
     } catch (e) {
       await conn.rollback();
-      throw new InternalServerErrorException(e.message);
+      throw e instanceof BadRequestException || e instanceof NotFoundException
+        ? e
+        : new InternalServerErrorException(e.message);
     } finally {
       await conn.close();
     }
   }
 
+  // --- TASK 4: QR Token Lookup ---
+  async getJobByQrToken(token: string) {
+    const conn = await this.db.getConnection();
+    try {
+      const result = await conn.execute(
+        `SELECT j.Job_ID, u.First_Name, u.Last_Name, u.EMail, v.Status_Name, 
+                j.Page_count, j.copies, j.Job_type, v.Collection_slot, v.Expiry_time, 
+                pi.Kiosk_ID, k.Location_name, pi.Bin_ID
+         FROM PRINT_JOB j
+         JOIN SUBMITS s ON j.Job_ID = s.Job_ID
+         JOIN APP_USER u ON s.User_ID = u.User_ID
+         JOIN V_JOB_DETAILS v ON j.Job_ID = v.Job_ID
+         LEFT JOIN PLACED_IN pi ON j.Job_ID = pi.Job_ID
+         LEFT JOIN KIOSK k ON pi.Kiosk_ID = k.Kiosk_ID
+         WHERE j.QR_Secure_Token = :token`,
+        { token },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+
+      const row: any = (result.rows as any[])[0];
+      if (!row) throw new NotFoundException('Invalid or expired QR token');
+      if (row.STATUS_NAME !== 'Binned')
+        throw new BadRequestException('Job is not ready for collection');
+
+      const isExpired = new Date() > new Date(row.EXPIRY_TIME);
+
+      return {
+        jobId: row.JOB_ID,
+        userFirstName: row.FIRST_NAME,
+        userLastName: row.LAST_NAME,
+        userEmail: row.EMAIL,
+        statusName: row.STATUS_NAME,
+        pageCount: row.PAGE_COUNT,
+        copies: row.COPIES,
+        jobType: row.JOB_TYPE,
+        collectionSlot: row.COLLECTION_SLOT,
+        expiryTime: row.EXPIRY_TIME,
+        kioskId: row.KIOSK_ID,
+        locationName: row.LOCATION_NAME,
+        binId: row.BIN_ID,
+        isExpired,
+      };
+    } finally {
+      await conn.close();
+    }
+  }
+
+  // --- UPDATE: Bin Maintenance Status ---
+  async updateBin(userId: number, binId: string, binStatus: string) {
+    const conn = await this.db.getConnection();
+    try {
+      const kioskId = await this.getAssignedKiosk(conn, userId);
+      if (!kioskId) throw new BadRequestException('No kiosk assigned');
+
+      const oldBinStatusRes = await conn.execute(
+        `SELECT Bin_status FROM COLLECTION_BINS WHERE Kiosk_ID = :kioskId AND Bin_ID = :binId`,
+        { kioskId, binId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+      const oldStatus =
+        (oldBinStatusRes.rows as any[])[0]?.BIN_STATUS || 'Unknown';
+
+      await conn.execute(
+        `UPDATE COLLECTION_BINS SET Bin_status = :status WHERE Kiosk_ID = :kioskId AND Bin_ID = :binId`,
+        { status: binStatus, kioskId, binId },
+        { autoCommit: true },
+      );
+
+      await this.loggingService.logAction(
+        userId,
+        'BIN_STATUS_UPDATE',
+        'COLLECTION_BINS',
+        `${kioskId}_${binId}`,
+        oldStatus,
+        binStatus,
+      );
+      return { message: 'Bin updated', kioskId, binId, binStatus };
+    } finally {
+      await conn.close();
+    }
+  }
+
+  // --- GET: Operator Profile ---
   async getProfile(userId: number) {
     const conn = await this.db.getConnection();
     try {
