@@ -12,6 +12,39 @@ import { v4 as uuidv4 } from 'uuid';
 import { calculateJobDetails, PricingParams } from './pricing.engine';
 import { LoggingService } from 'src/logging/logging.service';
 
+export interface JobFilters {
+  status?: string;
+  jobType?: string;
+  from?: string;
+  to?: string;
+  search?: string;
+}
+
+export interface InvoiceData {
+  invoiceId: string;
+  jobId: number;
+  submissionTime: Date;
+  completionTime: Date;
+  document: string;
+  description: string;
+  jobType: string;
+  printMode: string;
+  printSide: string;
+  copies: number;
+  pageCount: number;
+  totalPages: number;
+  pricePerPage: number;
+  totalCost: number;
+  collectionSlot: Date;
+  statusName: string;
+  userFirstName: string;
+  userLastName: string;
+  userEmail: string;
+  transactionId: number;
+  transactionDate: Date;
+  balanceAfter: number;
+}
+
 @Injectable()
 export class JobsService {
   constructor(
@@ -526,6 +559,120 @@ export class JobsService {
         locationName: isBinned ? row.LOCATION_NAME : null,
         collectionSlot: row.COLLECTION_SLOT,
         expiryTime: row.EXPIRY_TIME,
+      };
+    } finally {
+      await conn.close();
+    }
+  }
+
+  async getJobs(userId: number, filters: JobFilters) {
+    const conn = await this.db.getConnection();
+    try {
+      let query = `SELECT * FROM V_JOB_DETAILS WHERE User_ID = :userId`;
+      const binds: Record<string, string | number> = { userId };
+
+      if (filters.status) {
+        query += ` AND Status_Name = :status`;
+        binds.status = filters.status;
+      }
+      
+      if (filters.jobType) {
+        query += ` AND Job_Type = :jobType`;
+        binds.jobType = filters.jobType;
+      }
+
+      if (filters.from) {
+        query += ` AND Submission_time >= TO_DATE(:fromDate, 'YYYY-MM-DD')`;
+        binds.fromDate = filters.from;
+      }
+
+      if (filters.to) {
+        // Add time to include the entire end day
+        query += ` AND Submission_time <= TO_DATE(:toDate || ' 23:59:59', 'YYYY-MM-DD HH24:MI:SS')`;
+        binds.toDate = filters.to;
+      }
+
+      if (filters.search) {
+        query += ` AND (LOWER(Description) LIKE LOWER('%' || :search || '%') OR LOWER(Document) LIKE LOWER('%' || :search || '%'))`;
+        binds.search = filters.search;
+      }
+
+      query += ` ORDER BY Submission_time DESC`;
+
+      const result = await conn.execute<Record<string, unknown>>(query, binds, {
+        outFormat: oracledb.OUT_FORMAT_OBJECT,
+      });
+
+      return (result.rows || []).map((row) => ({
+        jobId: row.JOB_ID as number,
+        document: row.DOCUMENT as string,
+        description: row.DESCRIPTION as string,
+        submissionTime: row.SUBMISSION_TIME as Date,
+        statusName: row.STATUS_NAME as string,
+        jobType: row.JOB_TYPE as string,
+        printMode: row.PRINT_MODE as string,
+        printSide: row.PRINT_SIDE as string,
+        copies: row.COPIES as number,
+        pageCount: row.PAGE_COUNT as number,
+      }));
+    } finally {
+      await conn.close();
+    }
+  }
+
+  async getJobInvoice(userId: number, jobId: number): Promise<InvoiceData> {
+    const conn = await this.db.getConnection();
+    try {
+      const query = `
+        SELECT 
+          v.Job_ID, v.Submission_time, v.Completion_time, v.Document, v.Description,
+          v.Job_Type, v.Print_Mode, v.Print_Side, v.Copies, v.Page_count,
+          (v.Page_count * v.Copies) AS Total_Pages,
+          v.Price_Per_Page, v.Total_Cost, v.Collection_Slot, v.Status_Name,
+          u.First_Name, u.Last_Name, u.Email,
+          ft.Transaction_ID, ft.Transaction_Date, ft.Balance_After
+        FROM V_JOB_DETAILS v
+        JOIN APP_USER u ON v.User_ID = u.User_ID
+        JOIN GENERATES g ON v.Job_ID = g.Job_ID
+        JOIN FINANCIAL_TRANSACTION ft ON g.Transaction_ID = ft.Transaction_ID
+        WHERE v.Job_ID = :jobId AND v.User_ID = :userId AND ft.Transaction_Type = 'deduction'
+      `;
+
+      const result = await conn.execute<Record<string, unknown>>(
+        query,
+        { jobId, userId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+
+      if (!result.rows || result.rows.length === 0) {
+        throw new NotFoundException('Invoice not found or job belongs to another user.');
+      }
+
+      const row = result.rows[0];
+
+      return {
+        invoiceId: `INV-${row.JOB_ID}-${userId}`,
+        jobId: row.JOB_ID as number,
+        submissionTime: row.SUBMISSION_TIME as Date,
+        completionTime: row.COMPLETION_TIME as Date,
+        document: row.DOCUMENT as string,
+        description: row.DESCRIPTION as string,
+        jobType: row.JOB_TYPE as string,
+        printMode: row.PRINT_MODE as string,
+        printSide: row.PRINT_SIDE as string,
+        copies: row.COPIES as number,
+        pageCount: row.PAGE_COUNT as number,
+        totalPages: row.TOTAL_PAGES as number,
+        pricePerPage: row.PRICE_PER_PAGE as number,
+        totalCost: row.TOTAL_COST as number,
+        collectionSlot: row.COLLECTION_SLOT as Date,
+        statusName: row.STATUS_NAME as string,
+        userFirstName: row.FIRST_NAME as string,
+        userLastName: row.LAST_NAME as string,
+        userEmail: row.EMAIL as string,
+        transactionId: row.TRANSACTION_ID as number,
+        transactionDate: row.TRANSACTION_DATE as Date,
+        balanceAfter: row.BALANCE_AFTER as number,
       };
     } finally {
       await conn.close();

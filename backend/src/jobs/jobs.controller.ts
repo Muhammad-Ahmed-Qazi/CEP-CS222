@@ -12,10 +12,11 @@ import {
   ParseIntPipe,
   BadRequestException,
   Req,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { JobsService } from './jobs.service';
+import { JobFilters, JobsService } from './jobs.service';
 import { PDFDocument } from 'pdf-lib';
 import { calculateJobDetails } from './pricing.engine';
 import { Multer } from 'multer';
@@ -90,10 +91,10 @@ export class JobsController {
   /**
    * Task 1: Refactored to use V_JOB_DETAILS View
    */
-  @Get()
-  async findAll(@Request() req) {
-    return this.jobsService.findAll(req.user.userId);
-  }
+  // @Get()
+  // async findAll(@Request() req) {
+  //   return this.jobsService.findAll(req.user.userId);
+  // }
 
   /**
    * Task 1: Refactored to use V_JOB_DETAILS View with ID filter
@@ -121,5 +122,27 @@ export class JobsController {
   @Get(':id/qr')
   async getJobQr(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.jobsService.getJobQr(req.user.userId, id);
+  }
+
+  @Get()
+  async getJobs(
+    @Request() req: { user: { userId: number } },
+    @Query('status') status?: string,
+    @Query('jobType') jobType?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('search') search?: string,
+  ) {
+    const filters: JobFilters = { status, jobType, from, to, search };
+    // This service method should now be your single source of truth for fetching jobs
+    return this.jobsService.getJobs(req.user.userId, filters);
+  }
+
+  @Get(':id/invoice')
+  async getInvoice(
+    @Request() req: { user: { userId: number } },
+    @Param('id', ParseIntPipe) jobId: number,
+  ) {
+    return this.jobsService.getJobInvoice(req.user.userId, jobId);
   }
 }

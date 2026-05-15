@@ -11,6 +11,16 @@ import { NotificationsService } from '../notifications/notifications.service'; /
 import * as bcrypt from 'bcrypt';
 import * as oracledb from 'oracledb';
 
+export interface ForgotPasswordDto {
+  email: string;
+}
+
+export interface ResetPasswordDto {
+  email: string;
+  otp: string;
+  newPassword: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -218,35 +228,35 @@ export class AuthService {
     }
   }
 
-  async updatePassword(userId: number, dto: any) {
-    const conn = await this.db.getConnection();
-    try {
-      const res = await conn.execute(
-        `SELECT Password_Hash FROM APP_USER WHERE User_ID = :userId`,
-        { userId },
-        { outFormat: oracledb.OUT_FORMAT_OBJECT },
-      );
+  // async updatePassword(userId: number, dto: any) {
+  //   const conn = await this.db.getConnection();
+  //   try {
+  //     const res = await conn.execute(
+  //       `SELECT Password_Hash FROM APP_USER WHERE User_ID = :userId`,
+  //       { userId },
+  //       { outFormat: oracledb.OUT_FORMAT_OBJECT },
+  //     );
 
-      const user = (res.rows as any[])?.[0];
-      if (!user) throw new NotFoundException('User not found');
+  //     const user = (res.rows as any[])?.[0];
+  //     if (!user) throw new NotFoundException('User not found');
 
-      const isMatch = await bcrypt.compare(
-        dto.currentPassword,
-        user.PASSWORD_HASH,
-      );
-      if (!isMatch) throw new BadRequestException('Current password incorrect');
+  //     const isMatch = await bcrypt.compare(
+  //       dto.currentPassword,
+  //       user.PASSWORD_HASH,
+  //     );
+  //     if (!isMatch) throw new BadRequestException('Current password incorrect');
 
-      const newHash = await bcrypt.hash(dto.newPassword, 10);
-      await conn.execute(
-        `UPDATE APP_USER SET Password_Hash = :newHash WHERE User_ID = :userId`,
-        { newHash, userId },
-        { autoCommit: true },
-      );
-      return { message: 'Password updated' };
-    } finally {
-      await conn.close();
-    }
-  }
+  //     const newHash = await bcrypt.hash(dto.newPassword, 10);
+  //     await conn.execute(
+  //       `UPDATE APP_USER SET Password_Hash = :newHash WHERE User_ID = :userId`,
+  //       { newHash, userId },
+  //       { autoCommit: true },
+  //     );
+  //     return { message: 'Password updated' };
+  //   } finally {
+  //     await conn.close();
+  //   }
+  // }
 
   async deleteAccount(userId: number) {
     const conn = await this.db.getConnection();
@@ -287,6 +297,76 @@ export class AuthService {
         { autoCommit: true },
       );
       return this.getFullProfile(userId);
+    } finally {
+      await conn.close();
+    }
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const conn = await this.db.getConnection();
+    try {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // Use FROM_TZ and TO_TIMESTAMP to force Karachi time (UTC+5)
+      // or simply use SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi'
+      const result = await conn.execute(
+        `UPDATE APP_USER 
+        SET password_reset_token = :otp, 
+            password_reset_expires = (SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi') + INTERVAL '15' MINUTE
+        WHERE Email = :email`,
+        { otp, email: dto.email },
+        { autoCommit: true }
+      );
+
+      return { 
+        message: 'If this email exists, a reset code has been sent.',
+        otp: result.rowsAffected === 1 ? otp : null 
+      };
+    } finally {
+      await conn.close();
+    }
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const conn = await this.db.getConnection();
+    try {
+      const result = await conn.execute<Record<string, unknown>>(
+        `SELECT password_reset_token, password_reset_expires 
+         FROM APP_USER 
+         WHERE Email = :email`,
+        { email: dto.email },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      if (!result.rows || result.rows.length === 0) {
+        throw new BadRequestException('Invalid request');
+      }
+
+      const user = result.rows[0];
+      const token = user.PASSWORD_RESET_TOKEN as string;
+      const expiry = user.PASSWORD_RESET_EXPIRES as Date;
+
+      if (!token || token !== dto.otp) {
+        throw new BadRequestException('Invalid OTP');
+      }
+
+      if (new Date() > expiry) {
+        throw new BadRequestException('OTP has expired');
+      }
+
+      const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+
+      await conn.execute(
+        `UPDATE APP_USER 
+         SET Password_Hash = :hashedPassword, 
+             password_reset_token = NULL, 
+             password_reset_expires = NULL 
+         WHERE Email = :email`,
+        { hashedPassword, email: dto.email },
+        { autoCommit: true }
+      );
+
+      return { message: 'Password reset successfully' };
     } finally {
       await conn.close();
     }

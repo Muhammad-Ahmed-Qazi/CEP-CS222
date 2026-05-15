@@ -12,7 +12,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AuthService } from './auth.service';
+import { AuthService, ForgotPasswordDto, ResetPasswordDto } from './auth.service';
 import { LoggingService } from '../logging/logging.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import * as fs from 'fs';
@@ -106,20 +106,30 @@ export class AuthController {
   /**
    * Task 4: Change Password
    */
-  @UseGuards(JwtAuthGuard)
-  @Patch('password')
-  async changePassword(@Request() req, @Body() body) {
-    const result = await this.authService.updatePassword(req.user.userId, body);
+  // @UseGuards(JwtAuthGuard)
+  // @Patch('password')
+  // async changePassword(@Request() req, @Body() body) {
+  //   const result = await this.authService.updatePassword(req.user.userId, body);
 
-    // Explicitly await audit log security updates
-    await this.loggingService.logAction(
-      req.user.userId,
-      'PASSWORD_CHANGE',
-      'APP_USER',
-      req.user.userId,
-    );
+  //   // Explicitly await audit log security updates
+  //   await this.loggingService.logAction(
+  //     req.user.userId,
+  //     'PASSWORD_CHANGE',
+  //     'APP_USER',
+  //     req.user.userId,
+  //   );
 
-    return result;
+  //   return result;
+  // }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
   /**
