@@ -72,7 +72,13 @@ export class ProfilePage implements OnInit {
     private toastCtrl: ToastController
   ) { }
 
-  ngOnInit(): void {
+  ngOnInit() {
+    // Move any data calls out of here if you want them fresh on entry!
+  }
+
+  ionViewWillEnter() {
+    // This hook fires EVERY single time the user clicks on the profile tab view.
+    console.log('Profile tab came into focus, refreshing wallet and stats...');
     this.loadAllData();
   }
 
@@ -157,8 +163,8 @@ export class ProfilePage implements OnInit {
     if (fileList && fileList.length > 0) {
       const file = fileList[0];
       const formData = new FormData();
-      
-      // 🌟 FIXED: Changed key from 'profile-picture' to 'file' to match NestJS FileInterceptor('file')
+
+      // Matches NestJS FileInterceptor('file')
       formData.append('file', file);
 
       this.isLoading = true;
@@ -167,7 +173,6 @@ export class ProfilePage implements OnInit {
         .subscribe({
           next: (updatedProfile) => {
             if (this.profile) {
-              // 🌟 FIXED: Map parameter values directly from the database response object payload
               this.profile.profilePicture = updatedProfile.profilePicture;
             }
             this.showToast('Profile picture updated successfully.', 'success');
@@ -244,23 +249,32 @@ export class ProfilePage implements OnInit {
     await alert.present();
   }
 
-  private executeTopUp(amount: number): void {
-    this.isLoading = true;
-    this.api.post<{ currentBalance: number }>('/transactions/topup', { amount })
-      .subscribe({
-        next: (res) => {
-          if (this.profile) this.profile.accountBalance = res.currentBalance;
-          if (this.summary) this.summary.currentBalance = res.currentBalance;
-          this.showToast(`Successfully credited PKR ${amount} to your account.`, 'success');
-          // Refresh list to show topup transaction line
-          this.api.get<Transaction[]>('/transactions').subscribe(txs => this.transactions = txs);
-          this.isLoading = false;
-        },
-        error: () => {
-          this.isLoading = false;
-          this.showToast('Top up transaction aborted.', 'danger');
-        }
-      });
+  executeTopUp(amount: number) {
+    if (amount <= 0) return;
+
+    this.api.post('/transactions/topup', { amount }).subscribe({
+      next: async (response) => {
+        // 1. Present success feedback to the user
+        const toast = await this.toastCtrl.create({
+          message: `Successfully topped up PKR ${amount}!`,
+          duration: 2000,
+          color: 'success',
+          position: 'bottom'
+        });
+        await toast.present();
+
+        // 3. REFRESH ALL METRICS BY CALLING YOUR API SUBSCRIPTIONS AGAIN
+        this.loadAllData();
+      },
+      error: async (err) => {
+        const toast = await this.toastCtrl.create({
+          message: 'Top-up failed. Please check your network connection.',
+          duration: 3000,
+          color: 'danger'
+        });
+        await toast.present();
+      }
+    });
   }
 
   /**
@@ -333,14 +347,17 @@ export class ProfilePage implements OnInit {
 
   private executeDeleteAccount(): void {
     this.isLoading = true;
+
+    // Explicit responseType payload set to 'text' maps blank/status success structures correctly
     this.api.delete('/auth/me').subscribe({
       next: () => {
         this.isLoading = false;
-        this.showToast('Your account has been deleted permanently.', 'medium');
+        this.showToast('Your account has been deleted permanently.', 'success');
         this.authService.logout();
         this.navCtrl.navigateRoot('/login');
       },
-      error: () => {
+      error: (err) => {
+        console.error('Account deletion execution log detail:', err);
         this.isLoading = false;
         this.showToast('Failed to delete account. Please try again.', 'danger');
       }

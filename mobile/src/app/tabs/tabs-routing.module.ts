@@ -4,7 +4,7 @@ import { TabsPage } from './tabs.page';
 
 const routes: Routes = [
   {
-    path: '', // Leave this empty, it's matched by 'tabs' in app-routing
+    path: '',
     component: TabsPage,
     children: [
       {
@@ -16,13 +16,17 @@ const routes: Routes = [
         loadChildren: () => import('../pages/submit/submit.module').then(m => m.SubmitPageModule)
       },
       {
-        path: 'profile',
-        loadChildren: () => import('../pages/profile/profile.module').then(m => m.ProfilePageModule)
+        path: 'more',
+        loadChildren: () => import('../pages/more/more.module').then(m => m.MorePageModule)
       },
       {
         path: '',
-        redirectTo: 'jobs', // NO leading slash here
+        redirectTo: 'jobs',
         pathMatch: 'full'
+      },
+      {
+        path: 'profile',
+        loadChildren: () => import('../pages/profile/profile.module').then(m => m.ProfilePageModule)
       }
     ]
   }
@@ -30,5 +34,6 @@ const routes: Routes = [
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule]
 })
-export class TabsPageRoutingModule {}
+export class TabsPageRoutingModule { }

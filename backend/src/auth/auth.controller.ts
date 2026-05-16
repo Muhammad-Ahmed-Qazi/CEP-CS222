@@ -177,14 +177,6 @@ export class AuthController {
   async deleteAccount(@Request() req) {
     const result = await this.authService.deleteAccount(req.user.userId);
 
-    // Explicitly await final operational audit execution trace record
-    await this.loggingService.logAction(
-      req.user.userId,
-      'DELETE_ACCOUNT',
-      'APP_USER',
-      req.user.userId,
-    );
-
     return result;
   }
 }

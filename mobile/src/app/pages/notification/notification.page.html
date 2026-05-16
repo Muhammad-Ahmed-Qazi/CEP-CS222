@@ -1,0 +1,92 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/jobs" color="dark"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Notifications</ion-title>
+    <ion-buttons slot="end" *ngIf="notifications.length > 0 && !isLoading">
+      <ion-button (click)="markAllAsRead()" color="primary" class="header-action-btn">
+        Mark read
+      </ion-button>
+      <ion-button (click)="clearAllNotifications()" color="danger" class="header-action-btn">
+        Clear all
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <!-- Pull to Refresh -->
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingText="Pull to refresh" refreshingSpinner="circles"></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Filter Chips Horizontal Scroll Container -->
+  <div class="filter-scroll-container">
+    <ion-chip [class.active-chip]="currentFilter === 'all'" (click)="setFilter('all')">
+      <ion-label>All</ion-label>
+    </ion-chip>
+    <ion-chip [class.active-chip]="currentFilter === 'unread'" (click)="setFilter('unread')">
+      <ion-label>Unread</ion-label>
+    </ion-chip>
+    <ion-chip [class.active-chip]="currentFilter === 'jobs'" (click)="setFilter('jobs')">
+      <ion-label>Jobs</ion-label>
+    </ion-chip>
+    <ion-chip [class.active-chip]="currentFilter === 'transactions'" (click)="setFilter('transactions')">
+      <ion-label>Transactions</ion-label>
+    </ion-chip>
+    <ion-chip [class.active-chip]="currentFilter === 'system'" (click)="setFilter('system')">
+      <ion-label>System</ion-label>
+    </ion-chip>
+  </div>
+
+  <!-- Skeleton Loading Layer State -->
+  <div *ngIf="isLoading" class="ion-padding-top">
+    <div class="skeleton-item" *ngFor="let item of [1,2,3,4,5]">
+      <ion-avatar slot="start">
+        <ion-skeleton-text [animated]="true"></ion-skeleton-text>
+      </ion-avatar>
+      <div class="skeleton-label">
+        <ion-skeleton-text [animated]="true" style="width: 40%; height: 16px;"></ion-skeleton-text>
+        <ion-skeleton-text [animated]="true" style="width: 85%; height: 12px; margin-top: 8px;"></ion-skeleton-text>
+        <ion-skeleton-text [animated]="true" style="width: 20%; height: 10px; margin-top: 6px;"></ion-skeleton-text>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty Presentation Layer Template View Context -->
+  <div class="empty-state-box" *ngIf="!isLoading && filteredNotifications.length === 0">
+    <div class="empty-icon-frame">
+      <ion-icon name="notifications-off-outline"></ion-icon>
+    </div>
+    <h2>No notifications yet</h2>
+    <p>We'll ping you when there's an update on your print jobs or wallet actions.</p>
+  </div>
+
+  <!-- Dense Scannable Notification List Array Context -->
+  <div class="notification-list-wrapper" *ngIf="!isLoading && filteredNotifications.length > 0">
+    <div 
+      class="notification-row" 
+      *ngFor="let fx of filteredNotifications" 
+      [class.unread-row]="!fx.isRead"
+      (click)="handleNotificationTap(fx)">
+      
+      <!-- Left Configured Type Variant Icon Boundary Frame -->
+      <div class="type-icon-frame" [ngClass]="getNotificationContext(fx.notificationType).class">
+        <ion-icon [name]="getNotificationContext(fx.notificationType).icon"></ion-icon>
+      </div>
+
+      <!-- Middle Content Metadata Stack Blocks -->
+      <div class="content-middle-block">
+        <h3 class="notification-title-text" [class.un-bold]="fx.isRead">{{ fx.title }}</h3>
+        <p class="notification-message-body">{{ fx.message }}</p>
+        <span class="timestamp-subtext">{{ formatTimeAgo(fx.createdAt) }}</span>
+      </div>
+
+      <!-- Right Read/Unread Cyan Visual Marker Indicator Drop -->
+      <div class="unread-dot-indicator-gate" *ngIf="!fx.isRead">
+        <div class="cyan-dot"></div>
+      </div>
+    </div>
+  </div>
+</ion-content>

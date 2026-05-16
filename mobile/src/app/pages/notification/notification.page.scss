@@ -1,0 +1,217 @@
+// Global Notification Canvas Host Override
+:host {
+  background-color: #121212;
+}
+
+ion-toolbar {
+  --background: #1E1E1E;
+  --color: #ffffff;
+  padding-inline: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+  ion-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.3px;
+    color: #ffffff;
+  }
+}
+
+.header-action-btn {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  --color: #00B4D8; // Clean clickable text color
+  --padding-start: 8px;
+  --padding-end: 8px;
+}
+
+// Horizontal Filter Chips Block System Configurations Layout
+.filter-scroll-container {
+  display: flex;
+  white-space: nowrap;
+  overflow-x: auto;
+  padding: 12px 16px;
+  gap: 8px;
+  background: #121212; // Matches underlying canvas
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  
+  &::-webkit-scrollbar {
+    display: none; // Masks horizontal native touch scroll rails
+  }
+
+  ion-chip {
+    margin: 0;
+    background: #1E1E1E; // Flat dark surface contrast container block
+    --color: #A4A4B5;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &.active-chip {
+      background: #00B4D8;
+      --color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0, 180, 216, 0.3);
+    }
+  }
+}
+
+// Notification Array Component Matrix Row Layout Elements Structures
+.notification-list-wrapper {
+  background: #121212;
+}
+
+.notification-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  background-color: #1E1E1E; // Raised surface theme cards
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:active {
+    background-color: #252525;
+  }
+
+  &.unread-row {
+    background-color: rgba(0, 180, 216, 0.04); // Unified subtle cyan notification tint tint
+  }
+}
+
+// Icon Canvas Box Frame Color Layout Rules Engine Mapping Directives
+.type-icon-frame {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  margin-right: 14px;
+  flex-shrink: 0;
+
+  &.cyan-brand { background: rgba(0, 180, 216, 0.1); color: #00B4D8; }
+  &.amber-alert { background: rgba(255, 183, 3, 0.12); color: #FFB703; }
+  &.green-success { background: rgba(42, 157, 143, 0.12); color: #2A9D8F; }
+  &.red-danger { background: rgba(230, 57, 70, 0.12); color: #E63946; }
+  &.gray-neutral { background: rgba(164, 164, 181, 0.12); color: #A4A4B5; }
+}
+
+.content-middle-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-right: 12px;
+
+  .notification-title-text {
+    margin: 0 0 4px 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff; // High emphasis title readable white string
+    line-height: 1.3;
+
+    &.un-bold {
+      font-weight: 500;
+      color: #E1E1E6; // Medium-high emphasis text layer
+    }
+  }
+
+  .notification-message-body {
+    margin: 0 0 6px 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: #A4A4B5; // Clean muted grey descriptor body strings
+    line-height: 1.4;
+  }
+
+  .timestamp-subtext {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: #72727A;
+    font-weight: 500;
+  }
+}
+
+.unread-dot-indicator-gate {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .cyan-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #00B4D8;
+    box-shadow: 0 0 6px rgba(0, 180, 216, 0.5);
+  }
+}
+
+// Presentation States: Loader Components and Empty Templates Rules 
+.skeleton-item {
+  display: flex;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: #1E1E1E;
+  align-items: center;
+
+  ion-avatar {
+    width: 40px;
+    height: 40px;
+    margin-right: 14px;
+    --background: rgba(255, 255, 255, 0.05);
+  }
+  .skeleton-label {
+    flex: 1;
+    --background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.empty-state-box {
+  text-align: center;
+  padding: 80px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+
+  .empty-icon-frame {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #1E1E1E;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 32px;
+    color: #72727A;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+  }
+
+  h2 {
+    font-family: 'Inter', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 8px 0;
+  }
+
+  p {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #A4A4B5;
+    margin: 0;
+    line-height: 1.5;
+  }
+}

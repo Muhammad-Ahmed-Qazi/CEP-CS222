@@ -263,8 +263,8 @@ export class AuthService {
     try {
       // Cascade delete historical references out of database transaction chains
       await conn.execute(
-        `DELETE FROM PRINT_JOB 
-         WHERE User_ID = :userId`,
+        `DELETE FROM PRINT_JOB
+         WHERE JOB_ID IN (SELECT JOB_ID FROM SUBMITS WHERE User_ID = :userId)`,
         { userId },
       );
 

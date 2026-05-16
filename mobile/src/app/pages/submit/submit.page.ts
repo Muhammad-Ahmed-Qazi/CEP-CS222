@@ -175,7 +175,7 @@ export class SubmitPage implements OnInit {
     formData.append('printMode', this.printMode);
     formData.append('printSide', this.printSide);
     formData.append('jobType', this.isBulk ? 'bulk' : 'normal');
-    
+
     const localDate = new Date(this.collectionSlot);
     formData.append('collectionSlot', localDate.toISOString());
     formData.append('pageCount', this.docPages.toString());
@@ -193,8 +193,21 @@ export class SubmitPage implements OnInit {
     this.api.postMultipart('/jobs', formData).subscribe({
       next: (res: any) => {
         loader.dismiss();
-        console.log('Upload Success:', res);
-        this.navCtrl.navigateRoot(`/tabs/jobs/`);
+        this.showToast('Print job submitted successfully!', 'success');
+
+        // 1. Reset the entire form state for the next submission
+        this.selectedFile = null;
+        this.thumbnail = null;
+        this.thumbnailBlob = null;
+        this.description = '';
+        this.printMode = 'bw';
+        this.printSide = 'single';
+        this.copies = 1;
+        this.docPages = 0;
+        this.initDateConstraints(); // Resets collection slots to default time loops
+
+        // 2. Redirect cleanly to the structural jobs tab root without trailing slashes
+        this.navCtrl.navigateRoot('/tabs/jobs');
       },
       error: (err) => {
         loader.dismiss();
@@ -205,12 +218,12 @@ export class SubmitPage implements OnInit {
 
   private initDateConstraints() {
     const now = new Date();
-    
+
     // Shift "now" by the local timezone offset so toISOString() 
     // gives us the local time instead of UTC
     const tzOffset = now.getTimezoneOffset() * 60000;
     const localISOTime = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
-    
+
     this.today = localISOTime;
     this.collectionSlot = localISOTime;
 

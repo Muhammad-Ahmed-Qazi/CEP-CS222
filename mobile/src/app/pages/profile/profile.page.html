@@ -97,10 +97,17 @@
           </ion-col>
         </ion-row>
         <ion-row style="gap: 12px; justify-content: space-between; flex-wrap: nowrap;">
-          <ion-col class="stat-card-box">
-            <ion-icon name="cash-outline" class="stat-card-icon"></ion-icon>
-            <span class="stat-card-label">Total Spent</span>
-            <h3 class="stat-card-value">PKR {{ summary.totalSpend }}</h3>
+          <ion-col class="stat-card-box" style="opacity: 0.5; filter: grayscale(100%); cursor: not-allowed;">
+            <ion-icon name="cash-outline" class="stat-card-icon" style="color: #8a8a93;"></ion-icon>
+
+            <span class="stat-card-label" style="color: #a1a1aa;">Total Spent</span>
+
+            <div style="margin-top: 6px;">
+              <ion-badge color="medium"
+                style="font-size: 10px; font-weight: 600; letter-spacing: 0.5px; padding: 4px 8px;">
+                COMING SOON
+              </ion-badge>
+            </div>
           </ion-col>
           <ion-col class="stat-card-box">
             <ion-icon name="leaf-outline" class="stat-card-icon"></ion-icon>

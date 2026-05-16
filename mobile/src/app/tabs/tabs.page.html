@@ -1,20 +1,25 @@
 <ion-tabs>
-
   <ion-tab-bar slot="bottom">
-    <ion-tab-button tab="jobs" href="/tabs/jobs">
-      <ion-icon aria-hidden="true" name="triangle"></ion-icon>
+    
+    <!-- Jobs Tab Navigation Link -->
+    <ion-tab-button tab="jobs">
+      <ion-icon name="home-outline"></ion-icon>
       <ion-label>Jobs</ion-label>
     </ion-tab-button>
 
-    <ion-tab-button tab="submit" href="/tabs/submit">
-      <ion-icon aria-hidden="true" name="ellipse"></ion-icon>
-      <ion-label>Submit</ion-label>
+    <!-- Visual Floating FAB Style Submit Layout Wrapper Integration -->
+    <ion-tab-button tab="submit" class="fab-tab-container">
+      <div class="fab-floating-circle">
+        <ion-icon name="add-circle-outline" class="fab-center-icon"></ion-icon>
+      </div>
+      <ion-label class="fab-label-fix">Print</ion-label>
     </ion-tab-button>
 
-    <ion-tab-button tab="profile" href="/tabs/profile">
-      <ion-icon aria-hidden="true" name="square"></ion-icon>
-      <ion-label>Profile</ion-label>
+    <!-- More Options Group Links Wrapper Matrix Link Row -->
+    <ion-tab-button tab="more">
+      <ion-icon name="ellipsis-horizontal-outline"></ion-icon>
+      <ion-label>More</ion-label>
     </ion-tab-button>
+
   </ion-tab-bar>
-
 </ion-tabs>
