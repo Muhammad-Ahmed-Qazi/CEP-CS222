@@ -145,4 +145,5 @@ vite.config.ts.timestamp-*
 # Custom paths
 .env
 dist/
-uploads/dashboard-backup-ref/
+dashboard-backup-ref/
+backend/uploads/

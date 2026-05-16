@@ -1,0 +1,110 @@
+<div class="dashboard-layout">
+    <header class="queue-header">
+        <div class="title-area">
+            <h1>Active Operations Queue</h1>
+            <p>Real-time campus pipeline monitoring engine. Hardwired straight to system database cores.</p>
+        </div>
+
+        <!-- Job Type Segment Tab Selectors -->
+        <div class="type-segmented-control">
+            <button [class.active]="selectedJobType === 'Normal'" (click)="changeJobTypeFilter('Normal')">Normal
+                Runs</button>
+            <button [class.active]="selectedJobType === 'Bulk'" (click)="changeJobTypeFilter('Bulk')">Bulk
+                Processing</button>
+        </div>
+    </header>
+
+    <!-- Operational Pipeline Status Horizon Filtering row -->
+    <nav class="status-filters">
+        <button *ngFor="let stat of ['All', 'Pending', 'Printing', 'Binned', 'Discarded', 'Collected']"
+            [class.active]="selectedStatus === stat" (click)="changeStatusFilter(stat)">
+            {{ stat }}
+        </button>
+    </nav>
+
+    <!-- Principal Data Grid Infrastructure -->
+    <div class="grid-card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Job ID</th>
+                    <th>User Context</th>
+                    <th>Page Matrix</th>
+                    <th>Collection Target Slot</th>
+                    <th>Pipeline Status</th>
+                    <th>Holding Expiry Countdown</th>
+                    <th>System Operational Directives</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let job of filteredJobs">
+                    <td class="bold-id">#CP-{{ job.id }}</td>
+                    <td>
+                        <div class="user-cell">
+                            <span class="user-name">{{ job.userName || 'Anonymous User' }}</span>
+                            <span class="user-email">{{ job.userEmail }}</span>
+                        </div>
+                    </td>
+                    <td><span class="page-badge">{{ job.pages }} Pages</span></td>
+                    <td class="slot-text">{{ job.collectionSlot | date:'shortTime' }}</td>
+                    <td>
+                        <span class="status-pill" [attr.data-status]="job.status">
+                            {{ job.status }}
+                        </span>
+                    </td>
+                    <!-- Expiring countdown dynamic clock cell -->
+                    <td class="countdown-cell">
+                        <span *ngIf="job.status === 'Binned'" class="timer-badge"
+                            [class.danger]="job.displayCountdown === 'EXPIRED'">
+                            {{ job.displayCountdown || 'Calculating...' }}
+                        </span>
+                        <span *ngIf="job.status !== 'Binned'" class="muted-dash">—</span>
+                    </td>
+                    <td>
+                        <div class="action-cell-group">
+                            <button *ngIf="job.status === 'Pending'" class="btn btn-print"
+                                (click)="handleStatusTransition(job, 'Printing')">Start Print</button>
+                            <button *ngIf="job.status === 'Printing'" class="btn btn-bin"
+                                (click)="handleStatusTransition(job, 'Binned')">Bin Allocation</button>
+                            <button *ngIf="job.status === 'Binned'" class="btn btn-discard"
+                                (click)="handleStatusTransition(job, 'Discarded')">Discard Run</button>
+                            <button *ngIf="job.status === 'Pending'" class="btn btn-discard"
+                                (click)="handleStatusTransition(job, 'Discarded')">Discard Run</button>
+                            <span *ngIf="['Collected', 'Discarded'].includes(job.status)" class="archive-lock">Terminal
+                                State Locked</span>
+                        </div>
+                    </td>
+                </tr>
+                <tr *ngIf="filteredJobs.length === 0">
+                    <td colspan="7" class="empty-state">No active queue rows detected matching current parameter
+                        constraints.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Overlays for Hardware Bin Assignments -->
+<div class="modal-backdrop" *ngIf="showBinModal">
+    <div class="modal-surface">
+        <h3>Assign Physical Storage Location</h3>
+        <p>Select an active, open hardware bin slot capable of accepting this job's scale profile.</p>
+
+        <div class="form-field">
+            <label>Available Target Bins (Kiosk Capacity Verified)</label>
+            <!-- Change [value]="bin.binId" to [ngValue]="bin.binId" -->
+            <select [(ngModel)]="selectedBinId" class="premium-select">
+                <option value="" disabled selected>Choose a verified open bin slot...</option>
+                <option *ngFor="let bin of availableBins" [ngValue]="bin.binId">
+                    Bin {{ bin.binId }} — Kiosk: {{ bin.locationName }} (Remaining: {{ bin.remainingCapacity }} pages)
+                </option>
+            </select>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-cancel" (click)="showBinModal = false">Cancel Transition</button>
+            <button class="btn btn-confirm" [disabled]="!selectedBinId" (click)="executeBinBinding()">Lock Binding & Bin
+                Job</button>
+        </div>
+    </div>
+</div>

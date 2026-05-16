@@ -1,0 +1,93 @@
+.dashboard-layout {
+  padding: 40px;
+  background-color: #0b0f19;
+  min-height: 100vh;
+  color: #f8fafc;
+  font-family: 'Inter', sans-serif;
+
+  .queue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+
+    h1 { font-size: 32px; font-weight: 700; color: #f8fafc; margin-bottom: 6px; }
+    p { color: #64748b; font-size: 14px; }
+
+    .type-segmented-control {
+      display: flex;
+      background-color: #111827;
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+
+      button {
+        background: transparent; border: none; color: #94a3b8; padding: 8px 16px;
+        font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 6px; transition: all 0.2s;
+        
+        &.active { background-color: #3b82f6; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+      }
+    }
+  }
+
+  .status-filters {
+    display: flex; gap: 12px; margin-bottom: 24px;
+    button {
+      background: #111827; border: 1px solid #1f2937; color: #94a3b8; padding: 10px 20px;
+      border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;
+      &:hover { border-color: #4b5563; color: #f8fafc; }
+      &.active { background: rgba(59, 130, 246, 0.15); border-color: #3b82f6; color: #60a5fa; }
+    }
+  }
+
+  .grid-card {
+    background-color: #111827; border: 1px solid #1f2937; border-radius: 12px; overflow: hidden;
+    
+    .data-table {
+      width: 100%; border-collapse: collapse; text-align: left;
+      th { background-color: #0f172a; padding: 16px; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #1f2937; }
+      td { padding: 18px 16px; border-bottom: 1px solid #1f2937; vertical-align: middle; font-size: 14px; }
+      
+      .bold-id { font-weight: 700; color: #3b82f6; }
+      .user-cell { display: flex; flex-direction: column; .user-name { font-weight: 600; color: #e2e8f0; } .user-email { font-size: 12px; color: #64748b; } }
+      .page-badge { background: #1f2937; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #cbd5e1; }
+      
+      .status-pill {
+        padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase;
+        &[data-status="Pending"] { background: rgba(59,130,246,0.12); color: #60a5fa; }
+        &[data-status="Printing"] { background: rgba(245,158,11,0.12); color: #fbbf24; }
+        &[data-status="Binned"] { background: rgba(16,185,129,0.12); color: #34d399; }
+        &[data-status="Discarded"] { background: rgba(239,68,68,0.12); color: #f87171; }
+      }
+
+      .timer-badge {
+        background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #34d399; padding: 4px 8px; border-radius: 6px; font-size: 13px; font-weight: 600;
+        &.danger { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.25); color: #f87171; animation: pulse 2s infinite; }
+      }
+    }
+  }
+}
+
+// Interactive Action Button System
+.btn {
+  padding: 8px 14px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  &-print { background-color: #3b82f6; color: white; &:hover { background-color: #2563eb; } }
+  &-bin { background-color: #10b981; color: white; &:hover { background-color: #059669; } }
+  &-discard { background-color: transparent; border: 1px solid #374151; color: #94a3b8; &:hover { background-color: rgba(239,68,68,0.1); border-color: #ef4444; color: #f87171; } }
+}
+.action-cell-group { display: flex; gap: 8px; }
+.archive-lock { color: #4b5563; font-size: 12px; font-style: italic; }
+
+// Modals Overlay Architectures
+.modal-backdrop {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2,6,17,0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100;
+  .modal-surface {
+    background: #111827; border: 1px solid #1f2937; padding: 32px; border-radius: 12px; width: 100%; max-width: 480px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+    h3 { font-size: 20px; font-weight: 700; color: #f8fafc; margin-bottom: 8px; }
+    p { color: #64748b; font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+    .premium-select { width: 100%; padding: 12px; background: #0b0f19; border: 1px solid #1f2937; border-radius: 8px; color: #f8fafc; font-size: 14px; &:focus { border-color: #3b82f6; outline: none; } }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px; .btn-cancel { background: transparent; color: #94a3b8; &:hover { color: white; } } .btn-confirm { background: #3b82f6; color: white; &:disabled { background: #1f2937; color: #4b5563; cursor: not-allowed; } } }
+  }
+}
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }

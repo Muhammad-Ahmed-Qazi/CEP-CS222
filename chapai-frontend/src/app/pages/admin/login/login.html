@@ -1,0 +1,66 @@
+<div class="login-wrapper">
+  <div class="brand-panel">
+    <div class="brand-mesh"></div>
+    <div class="brand-content">
+      <span class="system-badge">Kiosk Network Management</span>
+      <h1>Chapai Print<br><span class="highlight">Administration</span></h1>
+      <p>Secure high-throughput campus execution gateway. Monitor real-time printing queues, balance allocations, and kiosk operational health.</p>
+    </div>
+    <div class="brand-footer">
+      <p>© 2026 Chapai Systems. All rights reserved.</p>
+    </div>
+  </div>
+
+  <div class="form-panel">
+    <div class="form-container">
+      <div class="form-header">
+        <h2>Welcome Back</h2>
+        <p>Please enter your administrative credentials to log in.</p>
+      </div>
+
+      <!-- Actionable Error Alert Window -->
+      <div *ngIf="errorMessage" class="error-toast">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        </svg>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <form (ngSubmit)="onLogin()" #loginForm="ngForm">
+        <div class="input-group">
+          <label for="email">Email Address</label>
+          <div class="input-wrapper">
+            <input 
+              type="email" 
+              id="email" 
+              name="email"
+              [(ngModel)]="email" 
+              placeholder="name@domain.com"
+              required
+              autocomplete="email"
+            />
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              id="password" 
+              name="password"
+              [(ngModel)]="password" 
+              placeholder="••••••••"
+              required
+            />
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" [disabled]="isLoading">
+          <span *ngIf="!isLoading">Authenticate Gateway</span>
+          <span *ngIf="isLoading" class="loader"></span>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
