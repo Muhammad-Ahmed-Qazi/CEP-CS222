@@ -1,0 +1,326 @@
+// Base Global Configuration Variables & Host Scope Setup
+.profile-main-body {
+    margin-top: 12px;
+    background-color: #121212; // Complete dark mode page canvas containment
+}
+
+// SECTION 1: Avatar and Title Elements Elements Profile
+.avatar-container {
+    .user-avatar-img {
+        width: 94px;
+        height: 94px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid rgba(0, 180, 216, 0.25);
+    }
+
+    .initials-avatar-fallback {
+        width: 94px;
+        height: 94px;
+        border-radius: 50%;
+        background-color: rgba(0, 180, 216, 0.1);
+        color: #00B4D8;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 32px;
+        font-weight: 700;
+        border: 2px solid #00B4D8;
+    }
+
+    .camera-badge {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        background: #00B4D8;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #ffffff;
+        font-size: 14px;
+        border: 2px solid #121212; // Swapped out white edge for dark base separation
+    }
+}
+
+.full-name-text {
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff; // 🌟 FIXED: High contrast text color
+    margin: 0;
+}
+
+.edit-profile-btn {
+    --padding-start: 4px;
+    --padding-end: 4px;
+    height: 24px;
+    margin: 0;
+    --color: #00B4D8;
+}
+
+.inline-edit-item {
+    --background: #1A1A2E; // Deep contrast container background
+    --color: #ffffff; // Pure white text entry
+    --placeholder-color: #636366;
+    --border-radius: 12px; // Premium smooth rounded corners
+    --inner-padding-end: 8px;
+    --padding-start: 14px;
+
+    height: 48px; // Slightly taller for breathing room
+    font-size: 15px;
+    margin-bottom: 8px;
+    border: 1.5px solid rgba(0, 180, 216, 0.25);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease-in-out;
+
+    // Modern glow effect when actively editing the name
+    &.ion-focused {
+        border-color: #00B4D8;
+        box-shadow: 0 0 8px rgba(0, 180, 216, 0.35);
+    }
+
+    // Beautiful positioning for checkmark/close icons inside the input element
+    ion-button {
+        --color: #00B4D8;
+        font-size: 18px;
+        height: 36px;
+        margin: 0;
+
+        &[color="success"] {
+            --color: #34C759;
+        }
+
+        &[color="danger"] {
+            --color: #FF3B30;
+        }
+    }
+}
+
+.user-email-text {
+    font-size: 14px;
+    color: #A4A4B5; // Muted clean contrast text
+    margin: 4px 0 12px 0;
+}
+
+.role-outline-badge {
+    border: 1px solid #00B4D8;
+    color: #00B4D8;
+    background: rgba(0, 180, 216, 0.06);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+// SECTION 2: Summary Metrics Architecture Grid Design
+.stat-card-box {
+    background: #1E1E1E; // 🌟 FIXED: Swapped white card surface for deep dark grey
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+
+    .stat-card-icon {
+        font-size: 20px;
+        color: #00B4D8;
+        margin-bottom: 8px;
+    }
+
+    .stat-card-label {
+        font-size: 12px;
+        color: #A4A4B5;
+        font-weight: 500;
+    }
+
+    .stat-card-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #ffffff; // 🌟 FIXED: White values text
+        margin: 4px 0 0 0;
+    }
+}
+
+// SECTION 3: Dynamic Balances Elements Cards Container 
+.low-balance-banner {
+    background: rgba(255, 204, 0, 0.1); // 🌟 FIXED: Smooth dark mode low-balance accent tint
+    border: 1px solid #FFCC00;
+    border-radius: 10px 10px 0 0;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #FFCC00; // Bright clean text
+    font-weight: 600;
+    margin-bottom: -1px;
+}
+
+.main-balance-container {
+    background: #1E1E1E; // 🌟 FIXED: Dark container card
+    border: 1px solid #00B4D8;
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+
+    .balance-label-title {
+        font-size: 13px;
+        color: #A4A4B5;
+        font-weight: 500;
+        display: block;
+    }
+
+    .balance-large-display {
+        font-size: 34px;
+        font-weight: 800;
+        color: #00B4D8;
+        margin: 6px 0 16px 0;
+        letter-spacing: -0.5px;
+    }
+
+    .topup-action-btn {
+        --background: #00B4D8;
+        --color: #ffffff;
+        --border-radius: 10px;
+        height: 48px;
+        font-weight: 600;
+        font-size: 14px;
+        margin: 0;
+    }
+}
+
+// SECTION 4: Recent Transactions Rows Lists Elements Maps
+.block-title-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff; // 🌟 FIXED: High contrast section headers
+    margin: 0;
+}
+
+.see-all-toggle-link {
+    font-size: 13px;
+    color: #00B4D8;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.tx-list-group {
+    background: #1E1E1E; // 🌟 FIXED: Dark background card array
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 0;
+    overflow: hidden;
+}
+
+.tx-row-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background 0.1s ease;
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &:active {
+        background: #252525; // 🌟 FIXED: Dark active click feedback state
+    }
+
+    .tx-icon-frame {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 18px;
+        margin-right: 12px;
+
+        &.deduction {
+            background: rgba(255, 59, 48, 0.12);
+            color: #FF3B30;
+        }
+
+        &.topup {
+            background: rgba(52, 199, 89, 0.12);
+            color: #34C759;
+        }
+
+        &.refund {
+            background: rgba(0, 180, 216, 0.12);
+            color: #00B4D8;
+        }
+    }
+
+    .tx-details-middle {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        .tx-main-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff; // 🌟 FIXED: Clean white transaction row titles
+        }
+
+        .tx-timestamp-sub {
+            font-size: 11px;
+            color: #A4A4B5;
+        }
+    }
+}
+
+// SECTION 5: Menu List Card Controls System Interface Links
+.action-list-card {
+    background: #1E1E1E; // 🌟 FIXED: Clean matching dark surface list card
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.action-menu-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:active {
+        background: #252525;
+    }
+
+    .row-lead-icon {
+        font-size: 20px;
+        color: #ffffff; // 🌟 FIXED: Readable icons
+        margin-right: 14px;
+    }
+
+    .row-label-text {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 500;
+        color: #ffffff; // 🌟 FIXED: High visibility whites
+    }
+
+    .row-tail-arrow {
+        font-size: 16px;
+        color: #636366; // Subtly lit indicator arrows
+    }
+
+    &.destructive {
+
+        .row-lead-icon,
+        .row-label-text {
+            color: #FF3B30; // Keeps functional danger flags intact
+        }
+    }
+}

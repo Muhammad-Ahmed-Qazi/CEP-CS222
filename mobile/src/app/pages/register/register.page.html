@@ -1,0 +1,111 @@
+<ion-content class="ion-padding">
+  <div class="register-container">
+    
+    <!-- Header Controls -->
+    <div class="header-nav">
+      <ion-button fill="clear" (click)="goBack()" class="back-btn" color="dark">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+      <h2 class="title-text">Create Account</h2>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      
+      <!-- Name Structural Block Layout Grid -->
+      <div class="row-fields">
+        <div class="input-group half">
+          <ion-item lines="none" class="chapai-input-item">
+            <ion-input type="text" formControlName="firstName" placeholder="First Name"></ion-input>
+          </ion-item>
+        </div>
+        <div class="input-group half">
+          <ion-item lines="none" class="chapai-input-item">
+            <ion-input type="text" formControlName="lastName" placeholder="Last Name"></ion-input>
+          </ion-item>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <ion-item lines="none" class="chapai-input-item">
+          <ion-icon name="mail-outline" slot="start" color="medium"></ion-icon>
+          <ion-input type="email" formControlName="email" placeholder="Campus Email Address"></ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Role Selector Area -->
+      <label class="section-label">Select Account Role Type</label>
+      <div class="role-cards-grid">
+        <div class="role-card" [class.active]="registerForm.get('role')?.value === 'student'" (click)="setRole('student')">
+          <ion-icon name="school-outline" class="role-icon"></ion-icon>
+          <span>Student</span>
+        </div>
+        <div class="role-card" [class.active]="registerForm.get('role')?.value === 'faculty'" (click)="setRole('faculty')">
+          <ion-icon name="briefcase-outline" class="role-icon"></ion-icon>
+          <span>Faculty</span>
+        </div>
+      </div>
+
+      <!-- Conditional Form Input Modules Mapping -->
+      <div class="conditional-wrapper" *ngIf="registerForm.get('role')?.value === 'student'">
+        <div class="row-fields">
+          <div class="input-group half">
+            <ion-item lines="none" class="chapai-input-item">
+              <ion-input type="text" formControlName="major" placeholder="Major (e.g. CSE)"></ion-input>
+            </ion-item>
+          </div>
+          <div class="input-group half">
+            <ion-item lines="none" class="chapai-input-item">
+              <ion-input type="text" formControlName="batch" placeholder="Batch (e.g. 2028)"></ion-input>
+            </ion-item>
+          </div>
+        </div>
+      </div>
+
+      <div class="conditional-wrapper" *ngIf="registerForm.get('role')?.value === 'faculty'">
+        <div class="row-fields">
+          <div class="input-group half">
+            <ion-item lines="none" class="chapai-input-item">
+              <ion-input type="text" formControlName="department" placeholder="Department"></ion-input>
+            </ion-item>
+          </div>
+          <div class="input-group half">
+            <ion-item lines="none" class="chapai-input-item">
+              <ion-input type="text" formControlName="rank" placeholder="Rank / Title"></ion-input>
+            </ion-item>
+          </div>
+        </div>
+      </div>
+
+      <!-- Password Configurations -->
+      <div class="input-group">
+        <ion-item lines="none" class="chapai-input-item">
+          <ion-icon name="lock-closed-outline" slot="start" color="medium"></ion-icon>
+          <ion-input type="password" formControlName="password" placeholder="Password"></ion-input>
+        </ion-item>
+        
+        <!-- Password Strength Meter Bar Wrapper -->
+        <div class="strength-meter-box" *ngIf="registerForm.get('password')?.value">
+          <div class="bar-track">
+            <div class="bar-fill" [style.width.%]="passwordStrength" [style.background]="passwordStrengthColor"></div>
+          </div>
+          <span class="strength-label" [style.color]="passwordStrengthColor">Metrics: {{ passwordStrengthLabel }}</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <ion-item lines="none" class="chapai-input-item">
+          <ion-icon name="checkmark-circle-outline" slot="start" color="medium"></ion-icon>
+          <ion-input type="password" formControlName="confirmPassword" placeholder="Confirm Password"></ion-input>
+        </ion-item>
+        <div class="error-container" *ngIf="registerForm.hasError('mismatch') && registerForm.get('confirmPassword')?.touched">
+          <span>Passwords matching criteria execution sequence failed.</span>
+        </div>
+      </div>
+
+      <ion-button type="submit" expand="block" mode="ios" class="chapai-primary-btn ion-margin-top">
+        Complete Registration
+      </ion-button>
+
+    </form>
+  </div>
+</ion-content>

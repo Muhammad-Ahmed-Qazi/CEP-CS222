@@ -1,0 +1,154 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>New Print Job</ion-title>
+    <ion-buttons slot="end">
+      <div class="balance-badge" [class.danger]="currentBalance < totalCost">
+        PKR {{ currentBalance | number:'1.0-0' }}
+      </div>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+
+  <div class="section-title">Document</div>
+  <div class="upload-card" [class.has-file]="selectedFile" (click)="fileInput.click()">
+    <input type="file" #fileInput (change)="onFileSelected($event)" accept="application/pdf" hidden>
+
+    <ng-container *ngIf="!selectedFile">
+      <ion-icon name="cloud-upload-outline"></ion-icon>
+      <h3>Tap to upload PDF</h3>
+      <p>Max file size: 50MB</p>
+    </ng-container>
+
+    <ng-container *ngIf="selectedFile">
+      <div class="preview-container">
+        <img *ngIf="thumbnail" [src]="thumbnail" class="pdf-thumbnail" />
+        <div class="file-info">
+          <h4 class="truncate">{{ selectedFile.name }}</h4>
+          <p>{{ docPages }} pages detected</p>
+        </div>
+        <ion-button fill="clear" color="danger" (click)="selectedFile = null; $event.stopPropagation()">
+          <ion-icon name="close-circle" slot="icon-only"></ion-icon>
+        </ion-button>
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="section-title">Details</div>
+  <ion-item class="custom-input" lines="none">
+    <ion-input [(ngModel)]="description" placeholder="Add a note to identify this job..."></ion-input>
+  </ion-item>
+
+  <div class="section-title">Print Settings</div>
+  <div class="settings-card">
+
+    <div class="setting-row">
+      <ion-label>Mode</ion-label>
+      <ion-segment [(ngModel)]="printMode" mode="ios">
+        <ion-segment-button value="bw">B&W</ion-segment-button>
+        <ion-segment-button value="color" disabled>
+          Colour <ion-icon name="lock-closed" size="small"></ion-icon>
+        </ion-segment-button>
+      </ion-segment>
+    </div>
+
+    <div class="setting-row">
+      <ion-label>Layout</ion-label>
+      <ion-segment [(ngModel)]="printSide" mode="ios">
+        <ion-segment-button value="single">Single Sided</ion-segment-button>
+        <ion-segment-button value="double">Double Sided</ion-segment-button>
+      </ion-segment>
+    </div>
+
+    <div class="setting-row copies-row">
+      <ion-label>Copies</ion-label>
+      <div class="stepper">
+        <ion-button fill="clear" (click)="copies = copies > 1 ? copies - 1 : 1">
+          <ion-icon name="remove"></ion-icon>
+        </ion-button>
+        <span class="copy-count">{{ copies }}</span>
+        <ion-button fill="clear" (click)="copies = copies + 1">
+          <ion-icon name="add"></ion-icon>
+        </ion-button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Schedule</div>
+
+  <div *ngIf="isBulk" class="bulk-badge-card">
+    <div class="badge-header">
+      <ion-icon name="layers-outline" color="primary"></ion-icon>
+      <h3>Bulk Rate Applied</h3>
+    </div>
+    <p>Flat rate of <b>PKR 5/page</b> applied for orders over 15 pages.</p>
+  </div>
+
+  <div *ngIf="!isBulk" class="normal-schedule-card">
+    <div class="datetime-header">
+      <ion-icon name="calendar-outline" color="primary"></ion-icon>
+      <ion-label>Collection Time</ion-label>
+    </div>
+
+    <div class="datetime-controls">
+      <ion-datetime-button datetime="datetime-picker"></ion-datetime-button>
+    </div>
+
+    <ion-modal [keepContentsMounted]="true">
+      <ng-template>
+        <ion-datetime id="datetime-picker" presentation="date-time" [min]="today" [max]="maxDate"
+          minuteValues="0,15,30,45" hourCycle="h12" [(ngModel)]="collectionSlot">
+          <span slot="title">Select Collection Slot</span>
+        </ion-datetime>
+      </ng-template>
+    </ion-modal>
+
+    <div class="peak-info">
+      <ion-text color="warning">
+        <p><ion-badge color="warning" mode="ios"></ion-badge> Same-day Peak Hours (+PKR 0.5)</p>
+      </ion-text>
+    </div>
+
+    <div class="rate-indicator-footer">
+      <div class="indicator-row" *ngIf="pricePerPage <= 7.5 && pricePerPage >= 6.5">
+        <div class="dot green"></div>
+        <span>Standard Same-day Rate</span>
+      </div>
+
+      <div class="indicator-row" *ngIf="pricePerPage < 6.5">
+        <div class="dot blue"></div>
+        <span>Scheduled Rate (Off-Peak Discount)</span>
+      </div>
+    </div>
+  </div>
+
+</ion-content>
+
+<ion-footer class="ion-no-border sticky-footer">
+  <div class="estimator-row">
+    <div class="stat">
+      <span class="label">Total Pages</span>
+      <span class="value">{{ docPages > 0 ? totalPages : 'Detecting...' }}</span>
+    </div>
+    <div class="stat">
+      <span class="label">Rate/Page</span>
+      <span class="value">PKR {{ pricePerPage | number:'1.1-2' }}</span>
+    </div>
+    <div class="stat total">
+      <span class="label">Total Cost</span>
+      <span class="value highlight" [class.danger-text]="totalCost > currentBalance">
+        PKR {{ totalCost | number:'1.0-0' }}
+      </span>
+    </div>
+  </div>
+
+  <div class="warning-text" *ngIf="totalCost > currentBalance">
+    Insufficient Balance. Please top up your account.
+  </div>
+
+  <ion-button expand="block" class="submit-btn" size="large" (click)="submitJob()"
+    [disabled]="!selectedFile || totalCost > currentBalance || docPages === 0">
+    Review & Submit
+  </ion-button>
+</ion-footer>

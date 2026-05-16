@@ -1,0 +1,92 @@
+<ion-header class="ion-no-border" mode="ios">
+    <ion-toolbar>
+        <ion-buttons slot="start">
+            <ion-back-button defaultHref="/tabs/jobs"></ion-back-button>
+        </ion-buttons>
+        <ion-title>Job Details</ion-title>
+    </ion-toolbar>
+</ion-header>
+
+<ion-content *ngIf="job">
+
+    <!-- Immersive Full-Width Preview Block Container -->
+    <div class="hero-preview-container">
+        <div class="hero-blur-backdrop"
+            [style.background-image]="'url(http://localhost:3000/' + job.thumbnailPath + ')'"></div>
+        <img [src]="job.thumbnailPath ? 'http://localhost:3000/' + job.thumbnailPath : 'assets/pdf-placeholder.png'"
+            onerror="this.src='assets/pdf-placeholder.png'; this.onerror=null;" alt="Job Preview" class="hero-image" />
+
+        <!-- Positioned Status Tag -->
+        <div class="floating-badge-wrapper">
+            <ion-badge [color]="getStatusColor(job.statusName)">{{ job.statusName }}</ion-badge>
+        </div>
+    </div>
+
+    <!-- Content Padding Area Wrapper -->
+    <div class="detail-body-content ion-padding-horizontal">
+
+        <!-- Active Live Countdown Tracker (Renders globally if job is ready in bin) -->
+        <div class="binned-timer-inline" *ngIf="job.statusName === 'Binned' && !job.isExpired">
+            <span [class.danger-text]="isExpiringSoon(job.jobId)">
+                <ion-icon name="timer-outline"></ion-icon> {{ countdownMap[job.jobId] || 'Calculating...' }} remaining
+                to collect
+            </span>
+        </div>
+
+        <!-- New Dedicated Document Description Section -->
+        <div class="section-title">Document</div>
+        <div class="settings-card description-card">
+            <h4>{{ job.description || job.document }}</h4>
+        </div>
+
+        <!-- Processing Settings Configuration Meta Details -->
+        <!-- Settings Segment block inside your HTML wrapper -->
+        <div class="section-title">Settings</div>
+        <div class="settings-card info-grid">
+            <div class="info-row">
+                <span>Pages</span>
+                <b>{{ job.pageCount }} pages × {{ job.copies }} {{ (job.copies > 1) ? 'copies' : 'copy' }}</b>
+            </div>
+            <div class="info-row">
+                <span>Color Mode</span>
+                <b class="uppercase">{{ job.printMode }}</b>
+            </div>
+            <div class="info-row">
+                <span>Layout</span>
+                <b class="uppercase">{{ job.printSide }}</b>
+            </div>
+            <div class="info-row">
+                <span>Collection Slot</span>
+                <b>{{ job.collectionSlot | date:'short' }}</b>
+            </div>
+        </div>
+
+        <!-- Billing Layout Card -->
+        <div class="section-title">Billing</div>
+        <div class="settings-card info-grid">
+            <div class="info-row"><span>Calculated Cost</span> <b>PKR {{ job.totalCost }}</b></div>
+            <div class="info-row total"><span>Total Amount</span> <b class="highlight">PKR {{ job.totalCost }}</b></div>
+        </div>
+
+        <div class="bottom-spacer"></div>
+    </div>
+</ion-content>
+
+<!-- Shared Operational Sticky Footer Elements -->
+<ion-footer class="ion-no-border sticky-footer" *ngIf="job" mode="ios">
+    <ion-button expand="block" color="primary" *ngIf="job.statusName === 'Binned' && !job.isExpired" (click)="goToQR()">
+        <ion-icon name="qr-code-outline" slot="start"></ion-icon> Show QR Code
+    </ion-button>
+
+    <ion-button expand="block" color="danger" fill="outline" *ngIf="job.statusName === 'Pending'" (click)="cancelJob()">
+        Cancel Job
+    </ion-button>
+
+    <ng-container *ngIf="['Collected', 'Discarded'].includes(job.statusName) || job.isExpired">
+        <ion-button expand="block" color="secondary" (click)="openReprintModal()">Reprint Document</ion-button>
+        <ion-button expand="block" fill="outline" color="primary" mode="ios" (click)="downloadInvoice()">
+            <ion-icon name="download-outline" slot="start"></ion-icon>
+            Download Invoice
+        </ion-button>
+    </ng-container>
+</ion-footer>

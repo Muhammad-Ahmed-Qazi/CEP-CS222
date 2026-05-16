@@ -1,0 +1,153 @@
+.register-container {
+  font-family: 'Inter', sans-serif;
+  padding-top: 12px;
+  min-height: 100%;
+  background-color: #121212;
+
+  .header-nav {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+
+    .back-btn {
+      --padding-start: 0;
+      margin: 0;
+      font-size: 22px;
+      --color: #ffffff;
+    }
+
+    .title-text {
+      font-size: 22px;
+      font-weight: 600;
+      color: #ffffff;
+      margin: 0 0 0 12px;
+    }
+  }
+
+  .row-fields {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .input-group {
+    margin-bottom: 14px;
+    width: 100%;
+    
+    &.half {
+      flex: 1;
+    }
+  }
+
+  .chapai-input-item {
+      --background: #1E1E1E; // Deep grey surface field container
+      --color: #ffffff;      // Explicit typed text color
+      --placeholder-color: #A4A4B5; // Visible placeholder text tint
+      --border-radius: 12px;
+      --padding-start: 16px;
+      --inner-padding-end: 16px;
+      margin-bottom: 4px;
+      font-size: 14px;
+      height: 52px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px; // 🌟 FIX: Rounds the outer border box to match the background!
+      overflow: hidden;    // 🌟 FIX: Ensures internal content clipping follows the rounded corners
+      transition: all 0.2s ease-in-out;
+      color: #ffffff;
+
+      &.ion-touched.ion-invalid {
+        border: 1px solid #FF3B30;
+      }
+    }
+
+  .section-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #A4A4B5;
+    display: block;
+    margin: 16px 0 10px 2px;
+  }
+
+  .role-cards-grid {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 20px;
+
+    .role-card {
+      flex: 1;
+      height: 76px;
+      background: #1E1E1E;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+
+      .role-icon {
+        font-size: 22px;
+        color: #A4A4B5;
+      }
+
+      span {
+        font-size: 13px;
+        font-weight: 500;
+        color: #ffffff;
+      }
+
+      &.active {
+        border-color: #00B4D8;
+        background: rgba(0, 180, 216, 0.08);
+        
+        .role-icon { color: #00B4D8; }
+        span { color: #00B4D8; font-weight: 600; }
+      }
+    }
+  }
+
+  .strength-meter-box {
+    margin-top: 6px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .bar-track {
+      width: 65%;
+      height: 4px;
+      background: #2C2C2E;
+      border-radius: 2px;
+      overflow: hidden;
+
+      .bar-fill {
+        height: 100%;
+        width: 0;
+        transition: width 0.3s ease-in-out, background 0.3s ease-in-out;
+      }
+    }
+
+    .strength-label {
+      font-size: 11px;
+      font-weight: 600;
+    }
+  }
+
+  .error-container {
+    font-size: 12px;
+    color: #FF3B30;
+    margin-top: 4px;
+    padding-left: 4px;
+  }
+
+  .chapai-primary-btn {
+    --background: #00B4D8;
+    --color: #ffffff;
+    --border-radius: 12px;
+    font-weight: 600;
+    font-size: 15px;
+    height: 52px;
+  }
+}

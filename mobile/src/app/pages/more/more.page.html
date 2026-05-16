@@ -1,0 +1,60 @@
+<ion-content class="more-canvas-body">
+  
+  <!-- Top Identity Block Area Definition (Navigates to profile setup) -->
+  <div class="user-profile-hero" (click)="navigateToProfile()">
+    <div class="avatar-box" *ngIf="profile">
+      <img *ngIf="profile.profilePicture" [src]="profile.profilePicture.startsWith('http') ? profile.profilePicture : (baseUrl + '/' + profile.profilePicture)" class="hero-img" />
+      <div *ngIf="!profile.profilePicture" class="hero-fallback-initials">
+        {{ userInitials }}
+      </div>
+    </div>
+    <div class="identity-meta-strings" *ngIf="profile">
+      <h2>{{ profile.firstName }} {{ profile.lastName }}</h2>
+      <p>{{ profile.email }}</p>
+    </div>
+    <ion-icon name="chevron-forward-outline" class="hero-terminal-arrow"></ion-icon>
+  </div>
+
+  <!-- Selection Menu Matrix Options Lists Navigation Triggers Systems -->
+  <div class="action-menu-group ion-margin-top">
+    
+    <!-- Notifications Routing Component List Row Selector Item Link -->
+    <div class="menu-action-row" (click)="navigateToNotifications()">
+      <ion-icon name="notifications-outline" class="lead-icon color-cyan"></ion-icon>
+      <span class="action-label-text">Notifications</span>
+      <ion-badge color="danger" class="unread-count-pill" *ngIf="unreadCount > 0">
+        {{ unreadCount }}
+      </ion-badge>
+      <ion-icon name="chevron-forward-outline" class="tail-arrow"></ion-icon>
+    </div>
+
+    <!-- My Profile Context Target Anchor Row -->
+    <div class="menu-action-row" (click)="navigateToProfile()">
+      <ion-icon name="person-outline" class="lead-icon color-indigo"></ion-icon>
+      <span class="action-label-text">My Profile</span>
+      <ion-icon name="chevron-forward-outline" class="tail-arrow"></ion-icon>
+    </div>
+
+    <!-- Help and Support Component Microtrigger Toast Actions -->
+    <div class="menu-action-row" (click)="triggerHelpToast()">
+      <ion-icon name="help-circle-outline" class="lead-icon color-amber"></ion-icon>
+      <span class="action-label-text">Help & Support</span>
+      <ion-icon name="chevron-forward-outline" class="tail-arrow"></ion-icon>
+    </div>
+
+    <!-- About App Structural Info Modal Dialog Interface Setup -->
+    <div class="menu-action-row" (click)="openAboutModal()">
+      <ion-icon name="information-circle-outline" class="lead-icon color-teal"></ion-icon>
+      <span class="action-label-text">About Chapai</span>
+      <ion-icon name="chevron-forward-outline" class="tail-arrow"></ion-icon>
+    </div>
+
+    <!-- Security Session Account Disconnection Terminal Endpoint Row -->
+    <div class="menu-action-row terminal-destructive" (click)="triggerLogoutAlert()">
+      <ion-icon name="log-out-outline" class="lead-icon"></ion-icon>
+      <span class="action-label-text">Logout</span>
+      <ion-icon name="chevron-forward-outline" class="tail-arrow"></ion-icon>
+    </div>
+
+  </div>
+</ion-content>
