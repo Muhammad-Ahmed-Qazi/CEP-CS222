@@ -1,5 +1,5 @@
 import { Controller, Get, UseGuards, Request } from '@nestjs/common';
-import { ReportsService, MySummaryData } from './reports.service';
+import { ReportsService, MySummaryResponse } from './reports.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Adjust path if needed
 import { AdminGuard } from '../auth/guards/admin.guard'; // Adjust path if needed
 import {
@@ -27,7 +27,7 @@ export class ReportsController {
   @Get('my-summary')
   async getMySummary(
     @Request() req: { user: { userId: number } },
-  ): Promise<MySummaryData> {
+  ): Promise<MySummaryResponse> {
     // Calls the newly updated service method that handles the complex logic
     // and returns the combined metrics (duplex savings, job statuses, etc.)
     return this.reportsService.getMySummary(req.user.userId);

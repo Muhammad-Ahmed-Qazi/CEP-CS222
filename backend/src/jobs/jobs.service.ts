@@ -47,6 +47,15 @@ export interface InvoiceData {
   balanceAfter: number;
 }
 
+interface JobLockRow {
+  STATUS_NAME: string;
+  TOTAL_COST: number;
+}
+
+interface StatusIdRow {
+  STATUS_ID: number;
+}
+
 @Injectable()
 export class JobsService {
   private readonly logger = new Logger(JobsService.name);
@@ -81,8 +90,8 @@ export class JobsService {
   //     SET hs.status_id = (SELECT s.status_id FROM JOB_STATUS s WHERE s.status_name = 'Discarded')
   //     WHERE hs.status_id = (SELECT s.status_id FROM JOB_STATUS s WHERE s.status_name = 'Binned')
   //     AND hs.job_id IN (
-  //     SELECT pj.job_id 
-  //     FROM PRINT_JOB pj 
+  //     SELECT pj.job_id
+  //     FROM PRINT_JOB pj
   //     WHERE pj.expiry_time <= SYSTIMESTAMP)
   // `;
 
@@ -253,27 +262,47 @@ export class JobsService {
   /**
    * Task 1: Cancel Job & Issue Refund
    */
-  async cancelJob(jobId: number, userId: number) {
+  async cancelJob(
+    jobId: number,
+    userId: number,
+  ): Promise<{ message: string; refundAmount: number; newBalance: number }> {
     const conn = await this.db.getConnection();
+
     try {
-      // 1. Verify ownership and status with a lock to prevent race conditions
-      const jobRes = await conn.execute(
+      // 1. Fetch the exact system ID for the 'Cancelled' status up front
+      const statusRes = await conn.execute<StatusIdRow>(
+        `SELECT Status_ID FROM JOB_STATUS WHERE Status_Name = 'Cancelled'`,
+        [],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+
+      const cancelledStatusId = statusRes.rows?.[0]?.STATUS_ID;
+      if (!cancelledStatusId) {
+        throw new InternalServerErrorException(
+          'System status missing: Cancelled state not found',
+        );
+      }
+
+      // 2. Verify ownership, cost, and state with a row lock to prevent race conditions
+      const jobRes = await conn.execute<JobLockRow>(
         `SELECT Status_Name, total_cost FROM V_JOB_DETAILS 
          WHERE Job_Id = :jobId AND User_ID = :userId FOR UPDATE`,
         { jobId, userId },
         { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
 
-      const job = (jobRes.rows as any[])?.[0];
-      if (!job)
+      const job = jobRes.rows?.[0];
+      if (!job) {
         throw new ForbiddenException('Job not found or does not belong to you');
+      }
+
       if (job.STATUS_NAME !== 'Pending') {
         throw new BadRequestException('Only pending jobs can be cancelled');
       }
 
       const cost = job.TOTAL_COST;
 
-      // 2. Execute refund transaction
+      // 3. Execute the wallet balance refund returning the new balance atomically
       const refundRes = await conn.execute(
         `UPDATE NORMAL_USER 
          SET Account_balance = Account_balance + :cost 
@@ -284,13 +313,15 @@ export class JobsService {
           userId,
           new_balance: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
         },
+        { autoCommit: false },
       );
+
       const newBalance = (refundRes.outBinds as any).new_balance[0];
 
-      // 3. Log Financial Transaction
+      // 4. Log the Ledger entry in FINANCIAL_TRANSACTION
       const transRes = await conn.execute(
-        `INSERT INTO FINANCIAL_TRANSACTION (Amount, transaction_type, User_ID, balance_after) 
-         VALUES (:cost, 'refund', :userId, :newBalance) 
+        `INSERT INTO FINANCIAL_TRANSACTION (Amount, transaction_type, User_ID, balance_after, Transaction_date) 
+         VALUES (:cost, 'refund', :userId, :newBalance, CURRENT_TIMESTAMP) 
          RETURNING Transaction_ID INTO :trans_id`,
         {
           cost,
@@ -298,26 +329,31 @@ export class JobsService {
           newBalance,
           trans_id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
         },
+        { autoCommit: false },
       );
+
       const transId = (transRes.outBinds as any).trans_id[0];
 
-      // 4. Link transaction to job
+      // 5. Link transaction to job in the GENERATES bridge table
       await conn.execute(
         `INSERT INTO GENERATES (Job_Id, Transaction_ID) VALUES (:jobId, :transId)`,
         { jobId, transId },
+        { autoCommit: false },
       );
 
-      // 5. Update Status
+      // 6. Update operational state mapping table to the explicit Cancelled Status ID
       await conn.execute(
         `UPDATE HAS_STATUS 
-         SET Status_ID = (SELECT Status_ID FROM JOB_STATUS WHERE Status_Name = 'Discarded') 
+         SET Status_ID = :cancelledStatusId 
          WHERE Job_Id = :jobId`,
-        { jobId },
+        { cancelledStatusId, jobId },
+        { autoCommit: false },
       );
 
+      // Finalize database transaction block safely
       await conn.commit();
 
-      // 6. Notify
+      // 7. Dispatch socket/push notification channel communication
       await this.notificationsService.createNotification(
         Number(userId),
         'Job Cancelled',
@@ -326,7 +362,11 @@ export class JobsService {
         jobId,
       );
 
-      return { message: 'Job cancelled', refundAmount: cost, newBalance };
+      return {
+        message: `Job cancelled successfully. PKR ${cost} refunded.`,
+        refundAmount: cost,
+        newBalance,
+      };
     } catch (error) {
       await conn.rollback();
       throw error;
@@ -575,7 +615,7 @@ export class JobsService {
          LEFT JOIN KIOSK k ON pi.Kiosk_ID = k.Kiosk_ID
          WHERE j.Job_ID = :jobId AND s.User_ID = :userId`,
         { jobId, userId },
-        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
 
       const row: any = (result.rows as any[])[0];
@@ -677,7 +717,9 @@ export class JobsService {
       );
 
       if (!result.rows || result.rows.length === 0) {
-        throw new NotFoundException('Invoice not found or job belongs to another user.');
+        throw new NotFoundException(
+          'Invoice not found or job belongs to another user.',
+        );
       }
 
       const row = result.rows[0];

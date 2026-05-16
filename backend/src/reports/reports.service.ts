@@ -6,31 +6,49 @@ import {
   UserSummaryReport,
 } from './interfaces/reports.interface';
 
-export interface MySummaryData {
+export interface JobsByStatus {
+  pending: number;
+  printing: number;
+  binned: number;
+  collected: number;
+  discarded: number;
+  cancelled: number;
+}
+
+export interface MySummaryResponse {
   totalJobs: number;
   totalPages: number;
   pagesSavedByDuplex: number;
-  jobsByStatus: {
-    pending: number;
-    printing: number;
-    binned: number;
-    collected: number;
-    discarded: number;
-  };
+  totalSpend: number;
+  jobsByStatus: JobsByStatus;
+}
+
+interface CoreMetricsRow {
+  TOTAL_JOBS: number;
+  TOTAL_PAGES: number;
+  PAGES_SAVED: number;
+}
+
+interface SpendRow {
+  TOTAL_SPEND: number;
+}
+
+interface StatusBreakdownRow {
+  STATUS_NAME: string;
+  STATUS_COUNT: number;
 }
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly db: DbService) {}
+  constructor(private readonly db: DbService) { }
 
   /**
-   * Task 7: Refactor User Summary to use direct joins as per specification.
-   * This handles the aggregation of jobs, spend, and pages in a single query.
+   * Task 7: User Summary report using direct database joins.
+   * Handles the aggregation of system-wide jobs, spend, and pages.
    */
   async getUserSummary(userId?: number): Promise<UserSummaryReport[]> {
     const conn = await this.db.getConnection();
     try {
-      // Base SQL from Task 7 with camelCase aliases for the frontend
       let sql = `
         SELECT 
             au.User_ID as "userId", 
@@ -50,7 +68,6 @@ export class ReportsService {
 
       const binds: any = {};
 
-      // Maintain the ability to filter by a specific user if provided
       if (userId) {
         sql += ` AND au.User_ID = :userId`;
         binds.userId = userId;
@@ -75,13 +92,11 @@ export class ReportsService {
   }
 
   /**
-   * Task 1: Refactor to use V_DAILY_REPORT View.
-   * This view already aggregates the last 30 days of data.
+   * Task 1: Fetch consolidated operational trends directly from V_DAILY_REPORT.
    */
   async getDailyReport(): Promise<DailySystemReport[]> {
     const conn = await this.db.getConnection();
     try {
-      // Assuming V_DAILY_REPORT columns: REPORT_DATE, TOTAL_JOBS, TOTAL_REVENUE, NORMAL_JOBS, BULK_JOBS
       const sql = `
         SELECT 
           REPORT_DATE as "date",
@@ -108,52 +123,96 @@ export class ReportsService {
     }
   }
 
-  async getMySummary(userId: number): Promise<MySummaryData> {
+  /**
+   * Fetches specific dashboard metrics for a normal user, dividing
+   * active counters from cancelled/refunded transactional balances.
+   */
+  async getMySummary(userId: number): Promise<MySummaryResponse> {
     const conn = await this.db.getConnection();
     try {
-      const query = `
-        SELECT 
-          COUNT(Job_ID) AS TOTAL_JOBS,
-          NVL(SUM(Page_count * Copies), 0) AS TOTAL_PAGES,
-          NVL(SUM(CASE WHEN Print_Side = 'double' THEN (Page_count * Copies) ELSE 0 END), 0) AS PAGES_SAVED_BY_DUPLEX,
-          NVL(SUM(CASE WHEN Status_Name = 'Pending' THEN 1 ELSE 0 END), 0) AS PENDING_JOBS,
-          NVL(SUM(CASE WHEN Status_Name = 'Printing' THEN 1 ELSE 0 END), 0) AS PRINTING_JOBS,
-          NVL(SUM(CASE WHEN Status_Name = 'Binned' THEN 1 ELSE 0 END), 0) AS BINNED_JOBS,
-          NVL(SUM(CASE WHEN Status_Name = 'Collected' THEN 1 ELSE 0 END), 0) AS COLLECTED_JOBS,
-          NVL(SUM(CASE WHEN Status_Name = 'Discarded' THEN 1 ELSE 0 END), 0) AS DISCARDED_JOBS
-        FROM V_JOB_DETAILS
-        WHERE User_ID = :userId
-      `;
-
-      const result = await conn.execute<Record<string, unknown>>(
-        query,
+      // 1. Fetch core metrics explicitly EXCLUDING 'Cancelled' states
+      const statsRes = await conn.execute<CoreMetricsRow>(
+        `SELECT 
+          COUNT(pj.Job_Id) as TOTAL_JOBS,
+          NVL(SUM(pj.Page_count), 0) as TOTAL_PAGES,
+          NVL(SUM(CASE WHEN pj.Print_Side = 'double' THEN CEIL(pj.Page_count / 2) ELSE 0 END), 0) as PAGES_SAVED
+          FROM PRINT_JOB pj
+          JOIN SUBMITS s ON pj.Job_Id = s.Job_Id
+          JOIN HAS_STATUS hs ON pj.Job_Id = hs.Job_Id
+          JOIN JOB_STATUS js ON hs.Status_ID = js.Status_ID
+          WHERE s.User_ID = :userId AND js.Status_Name != 'Cancelled'`,
         { userId },
         { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
 
-      const row = result.rows?.[0] || {
+      // 2. Fetch total spent EXCLUDING refunded/cancelled transactions
+      const spendRes = await conn.execute<SpendRow>(
+        `SELECT NVL(SUM(ABS(ft.Amount)), 0) as TOTAL_SPEND
+          FROM FINANCIAL_TRANSACTION ft
+          JOIN GENERATES g ON ft.Transaction_ID = g.Transaction_ID
+          JOIN PRINT_JOB pj ON g.Job_ID = pj.Job_Id
+          JOIN HAS_STATUS hs ON pj.Job_Id = hs.Job_Id
+          JOIN JOB_STATUS js ON hs.Status_ID = js.Status_ID
+          WHERE ft.User_ID = :userId 
+          AND ft.Amount < 0 
+          AND js.Status_Name != 'Cancelled'`,
+        { userId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+
+      // 3. Fetch status breakdown INCLUDING 'Cancelled'
+      const statusRes = await conn.execute<StatusBreakdownRow>(
+        `SELECT js.Status_Name, COUNT(pj.Job_Id) as STATUS_COUNT
+          FROM PRINT_JOB pj
+          JOIN SUBMITS s ON pj.Job_Id = s.Job_Id
+          JOIN HAS_STATUS hs ON pj.Job_Id = hs.Job_Id
+          JOIN JOB_STATUS js ON hs.Status_ID = js.Status_ID
+          WHERE s.User_ID = :userId
+          GROUP BY js.Status_Name`,
+        { userId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
+      );
+
+      const stats = statsRes.rows?.[0] || {
         TOTAL_JOBS: 0,
         TOTAL_PAGES: 0,
-        PAGES_SAVED_BY_DUPLEX: 0,
-        PENDING_JOBS: 0,
-        PRINTING_JOBS: 0,
-        BINNED_JOBS: 0,
-        COLLECTED_JOBS: 0,
-        DISCARDED_JOBS: 0,
+        PAGES_SAVED: 0,
+      };
+      const spend = spendRes.rows?.[0]?.TOTAL_SPEND || 0;
+
+      const jobsByStatus: JobsByStatus = {
+        pending: 0,
+        printing: 0,
+        binned: 0,
+        collected: 0,
+        discarded: 0,
+        cancelled: 0,
       };
 
+      if (statusRes.rows) {
+        statusRes.rows.forEach((row) => {
+          const key = row.STATUS_NAME.toLowerCase() as keyof JobsByStatus;
+          if (jobsByStatus[key] !== undefined) {
+            jobsByStatus[key] = row.STATUS_COUNT;
+          }
+        });
+      }
+
       return {
-        totalJobs: row.TOTAL_JOBS as number,
-        totalPages: row.TOTAL_PAGES as number,
-        pagesSavedByDuplex: row.PAGES_SAVED_BY_DUPLEX as number,
-        jobsByStatus: {
-          pending: row.PENDING_JOBS as number,
-          printing: row.PRINTING_JOBS as number,
-          binned: row.BINNED_JOBS as number,
-          collected: row.COLLECTED_JOBS as number,
-          discarded: row.DISCARDED_JOBS as number,
-        },
+        totalJobs: stats.TOTAL_JOBS,
+        totalPages: stats.TOTAL_PAGES,
+        pagesSavedByDuplex: stats.PAGES_SAVED,
+        totalSpend: spend,
+        jobsByStatus,
       };
+    } catch (error) {
+      console.error(
+        `Error aggregating user metrics for student ${userId}:`,
+        error,
+      );
+      throw new InternalServerErrorException(
+        'Failed to process dashboard metrics compilation',
+      );
     } finally {
       await conn.close();
     }

@@ -30,9 +30,9 @@
 
   <div class="controls-section ion-padding-horizontal">
     <ion-searchbar [(ngModel)]="searchQuery" placeholder="Search files..."></ion-searchbar>
-    
+
     <div class="filter-container">
-      <ion-segment [(ngModel)]="activeTab" (ionChange)="onTabChange()" mode="ios">
+      <ion-segment [value]="activeTab" (ionChange)="segmentChanged($event)" mode="ios">
         <ion-segment-button value="active">Active</ion-segment-button>
         <ion-segment-button value="history">History</ion-segment-button>
       </ion-segment>
@@ -42,7 +42,6 @@
         <ion-select [(ngModel)]="statusFilter" interface="popover" placeholder="All Statuses">
           <ion-select-option value="All">All Statuses</ion-select-option>
           <ion-select-option *ngFor="let status of availableStatuses" [value]="status">
-            <!-- Transforms DB 'Binned' status to 'Ready for Pickup' inside dropdown labels for users -->
             {{ status === 'Binned' ? 'Ready for Collection' : status }}
           </ion-select-option>
         </ion-select>
@@ -56,9 +55,10 @@
     <p>Submit a document or adjust your filters.</p>
   </div>
 
-  <div class="job-list ion-padding-horizontal">
+  <div class="job-list ion-padding-horizontal" *ngIf="!isLoading">
     <div class="job-card" *ngFor="let job of filteredJobs" (click)="$event.stopPropagation(); goToDetail(job.jobId)"
-      [class.expired]="job.statusName === 'Discarded' || job.isExpired">
+      [class.expired]="job.statusName === 'Discarded' || job.isExpired"
+      [style.opacity]="job.statusName === 'Cancelled' ? '0.6' : '1'">
 
       <div class="card-inner">
         <div class="thumbnail">
@@ -68,31 +68,51 @@
 
         <div class="details" style="flex: 1; padding-right: 8px;">
           <div class="badges-row" style="margin-bottom: 6px;">
-            <ion-badge [color]="getStatusColor(job.statusName)" style="font-size: 11px; padding: 4px 8px; letter-spacing: 0.3px;">
-              <!-- Readable transformation for user convenience -->
+            <ion-badge [color]="getStatusColor(job.statusName)"
+              style="font-size: 11px; padding: 4px 8px; letter-spacing: 0.3px;">
               {{ (job.statusName === 'Binned' ? 'Ready for Collection' : job.statusName) | uppercase }}
             </ion-badge>
-            <ion-badge color="medium" style="font-size: 11px; padding: 4px 8px; letter-spacing: 0.3px;">{{ job.jobType | uppercase }}</ion-badge>
+            <ion-badge color="medium" style="font-size: 11px; padding: 4px 8px; letter-spacing: 0.3px;">
+              {{ job.jobType | uppercase }}
+            </ion-badge>
           </div>
 
           <div class="top-row">
-            <h4 class="truncate" style="margin: 2px 0 6px 0; font-size: 15px; font-weight: 600; color: var(--ion-color-dark);">
+            <h4 class="truncate"
+              style="margin: 2px 0 6px 0; font-size: 15px; font-weight: 600; color: var(--ion-color-dark);">
               {{ job.description || job.document }}
             </h4>
           </div>
 
-          <div class="time-row" style="margin-bottom: 4px;">
-            <ion-icon name="time-outline"></ion-icon>
+          <div class="time-row" style="margin-bottom: 4px; color: var(--ion-color-medium); font-size: 13px;">
+            <ion-icon name="time-outline" style="vertical-align: middle; margin-right: 4px;"></ion-icon>
             <span>Sent: {{ job.submissionTime | date:'short' }}</span>
           </div>
 
-          <!-- 🌟 FIX: Checked exclusively against 'Binned' to display collection text warning -->
+          <div class="refund-row" *ngIf="job.statusName === 'Cancelled'" style="margin-top: 4px;">
+            <ion-text color="medium"
+              style="font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 4px;">
+              <ion-icon name="cash-outline"></ion-icon>
+              <span>Cost automatically refunded to wallet balance.</span>
+            </ion-text>
+          </div>
+
           <div class="warning-row" *ngIf="job.statusName === 'Binned' && !job.isExpired">
-            <ion-text color="danger" style="display: flex; align-items: flex-start; gap: 4px; font-size: 12px; font-weight: 500; margin-top: 6px; line-height: 1.3;">
+            <ion-text color="danger"
+              style="display: flex; align-items: flex-start; gap: 4px; font-size: 12px; font-weight: 500; margin-top: 6px; line-height: 1.3;">
               <ion-icon name="alert-circle-outline" style="font-size: 15px; flex-shrink: 0;"></ion-icon>
               <span>Your time to collect this job is running out. View details to see remaining time.</span>
             </ion-text>
           </div>
+
+          <div class="job-actions" *ngIf="job.statusName === 'Binned' && !job.isExpired" style="margin-top: 10px;">
+            <ion-button fill="outline" size="small" mode="md" (click)="$event.stopPropagation();"
+              routerLink="/tabs/jobs/qr/{{job.jobId}}">
+              <ion-icon name="qr-code-outline" slot="start"></ion-icon>
+              Collect Print
+            </ion-button>
+          </div>
+
         </div>
       </div>
 
