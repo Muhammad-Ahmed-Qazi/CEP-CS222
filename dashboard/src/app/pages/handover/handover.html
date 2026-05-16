@@ -1,0 +1,33 @@
+
+
+
+ <div class="page">
+  
+
+
+<h2 class="title">Handover Confirmation</h2>
+
+<div class="card">
+  <label>Enter QR / Token ID</label>
+
+  <input
+    type="text"
+    placeholder="e.g. 101"
+    [(ngModel)]="token"
+  />
+
+  <button (click)="verifyJob()">Verify Job</button>
+</div>
+
+<div *ngIf="selectedJob" class="result">
+  <h3>Job Found ✅</h3>
+
+  <p><b>ID:</b> {{ selectedJob.id }}</p>
+  <p><b>User:</b> {{ selectedJob.user }}</p>
+  <p><b>File:</b> {{ selectedJob.file }}</p>
+  <p><b>Status:</b> {{ selectedJob.status }}</p>
+
+  <button (click)="completeJob()">Mark as Handed Over</button>
+</div>
+
+</div>

@@ -1,0 +1,147 @@
+.title {
+  margin-bottom: 15px;
+}
+
+.queue-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.queue-table th {
+  text-align: left;
+  background: #111827;
+  color: white;
+  padding: 12px;
+}
+
+.queue-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.queue-table tr:hover {
+  background: #f3f4f6;
+}
+
+.status {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: white;
+}
+
+.pending {
+  background: #f59e0b;
+}
+
+.printing {
+  background: #3b82f6;
+}
+
+
+.filters {
+  margin-bottom: 15px;
+}
+
+.filters button {
+  margin-right: 8px;
+  padding: 6px 10px;
+  border: none;
+  cursor: pointer;
+  background: #e5e7eb;
+  border-radius: 6px;
+}
+
+.filters button:hover {
+  background: #d1d5db;
+}
+
+/* smooth table appearance */
+.queue-table {
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* row hover lift */
+.queue-table tr {
+  transition: 0.2s;
+}
+
+.queue-table tr:hover {
+  transform: scale(1.01);
+  background: #eef2ff;
+}
+
+/* buttons animation */
+.filters button,
+.pagination button {
+  transition: 0.2s;
+}
+
+.filters button:hover,
+.pagination button:hover {
+  transform: translateY(-1px);
+}
+
+/* fade animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+.title {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filters button {
+  background: #111827;
+  color: white;
+  margin-right: 8px;
+}
+
+.filters button:hover {
+  background: #2563eb;
+}
+
+
+
+
+.search-box {
+  margin-bottom: 16px;
+}
+
+.filters {
+  margin-top: 8px;   /* 👈 this is the missing gap */
+  margin-bottom: 15px;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}

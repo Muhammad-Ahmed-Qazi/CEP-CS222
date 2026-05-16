@@ -1,0 +1,66 @@
+.title {
+  margin-bottom: 15px;
+}
+
+.search-box {
+  margin-bottom: 15px;
+}
+
+.search-box input {
+  padding: 8px;
+  width: 250px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.users-table th {
+  background: #111827;
+  color: white;
+  padding: 10px;
+  text-align: left;
+}
+
+.users-table td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.users-table tr:hover {
+  background: #f3f4f6;
+}
+
+button {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #dc2626;
+}
+
+.title {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

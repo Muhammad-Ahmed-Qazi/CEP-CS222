@@ -1,0 +1,61 @@
+.title {
+  margin-bottom: 20px;
+  color: black;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.card {
+  padding: 20px;
+  border-radius: 10px;
+  color: white;
+  font-weight: bold;
+}
+
+.card p {
+  font-size: 24px;
+  margin-top: 10px;
+}
+
+/* Colors like SaaS dashboard */
+.total {
+  background: #111827;
+}
+
+.pending {
+  background: #f59e0b;
+}
+
+.printing {
+  background: #3b82f6;
+}
+
+.completed {
+  background: #10b981;
+}
+
+.title {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.card {
+  margin-bottom: 20px;
+  
+}
+.card td {
+  color: #111827;
+}
