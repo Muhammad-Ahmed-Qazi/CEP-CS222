@@ -1,121 +1,200 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { ToastController, LoadingController } from '@ionic/angular';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ApiService } from '../../services/api.service';
-import * as QRCode from 'qrcode';
+import { ToastController, LoadingController, AlertController, NavController } from '@ionic/angular';
+import * as pdfjsLib from 'pdfjs-dist';
 
-interface JobResponse {
-  jobId: string;
-  qrToken: string;
-  estimatedTime: string;
+// Define the profile interface to match your working profile.page.ts
+export interface UserProfile {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  accountBalance: number;
 }
 
 @Component({
   selector: 'app-submit',
   templateUrl: './submit.page.html',
   styleUrls: ['./submit.page.scss'],
-  standalone: false,
+  standalone: false
 })
 export class SubmitPage implements OnInit {
-  @ViewChild('qrCanvas') canvas!: ElementRef<HTMLCanvasElement>;
-  
-  submitForm!: FormGroup;
   selectedFile: File | null = null;
-  submittedJob: JobResponse | null = null;
+  thumbnail: string | null = null;
+  description: string = '';
+  printMode: 'bw' | 'color' = 'bw';
+  printSide: 'single' | 'double' = 'single';
+  copies: number = 1;
+  docPages: number = 0;
+
+  today: string = '';
+  maxDate: string = '';
+  collectionSlot: string = '';
+  currentBalance: number = 0;
 
   constructor(
-    private fb: FormBuilder,
     private api: ApiService,
-    private toastCtrl: ToastController,
-    private loadingCtrl: LoadingController,
-    private router: Router
-  ) {}
+    private toast: ToastController,
+    private loading: LoadingController,
+    private alertCtrl: AlertController,
+    private navCtrl: NavController,
+    private cdr: ChangeDetectorRef
+  ) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/assets/pdf.worker.min.mjs';
+  }
 
   ngOnInit() {
-    this.submitForm = this.fb.group({
-      jobType: ['normal', Validators.required],
-      pageCount: [null, [Validators.required, Validators.min(1)]],
-      scheduledTime: [null]
+    this.initDateConstraints();
+  }
+
+  ionViewWillEnter() {
+    // This ensures balance is updated if you topped up on the profile tab
+    this.fetchUserBalance();
+  }
+
+  async fetchUserBalance() {
+    // FIX 1: Use /auth/me instead of /reports/my-summary
+    this.api.get<UserProfile>('/auth/me').subscribe({
+      next: (res) => {
+        // FIX 2: Use accountBalance to match your working profile logic
+        this.currentBalance = res.accountBalance || 0;
+        this.cdr.detectChanges();
+      },
+      error: () => this.showToast('Could not sync balance', 'danger')
     });
   }
 
-  onFileSelected(event: any) {
-    const file = event.target.files[0] as File;
-    if (!file) return;
+  async onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (!file || file.type !== 'application/pdf') {
+      this.showToast('Please select a valid PDF file', 'danger');
+      return;
+    }
+    this.selectedFile = file;
+    this.docPages = 0;
+    this.generateThumbnail(file);
+  }
 
-    if (file.type !== 'application/pdf') {
-      this.showToast('Please select a valid PDF file.', 'danger');
-      this.selectedFile = null;
+  async generateThumbnail(file: File) {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const loadingTask = (pdfjsLib as any).getDocument({
+        data: arrayBuffer,
+        useWorkerFetch: false
+      });
+
+      const pdf = await loadingTask.promise;
+      this.docPages = pdf.numPages;
+      this.cdr.detectChanges();
+
+      if (this.docPages > 0) {
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 0.3 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        if (context) {
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          await page.render({
+            canvasContext: context,
+            viewport: viewport,
+            canvas: canvas
+          }).promise;
+
+          this.thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+          this.cdr.detectChanges();
+        }
+      }
+    } catch (err) {
+      console.error('PDF Detection Error:', err);
+      this.showToast('Error detecting pages', 'danger');
+    }
+  }
+
+  // --- Calculations ---
+  get totalPages(): number { return this.docPages * this.copies; }
+  get isBulk(): boolean { return this.totalPages >= 15; }
+  get pricePerPage(): number {
+    if (this.isBulk) return 5;
+    let price = 7;
+    price += (this.printSide === 'double' ? -1 : 1);
+    return Math.max(1, price);
+  }
+  get totalCost(): number { return this.totalPages * this.pricePerPage; }
+
+  // --- Submission ---
+  async submitJob() {
+    if (!this.selectedFile || this.docPages === 0) {
+      this.showToast('Processing file...', 'warning');
+      return;
+    }
+    if (this.totalCost > this.currentBalance) {
+      this.showToast('Insufficient balance', 'danger');
       return;
     }
 
-    this.selectedFile = file;
+    const alert = await this.alertCtrl.create({
+      header: 'Confirm Order',
+      mode: 'ios',
+      subHeader: `${this.totalPages} Total Pages`,
+      message: `Total Cost: PKR ${this.totalCost.toFixed(0)}`,
+      buttons: [
+        { text: 'Edit', role: 'cancel' },
+        { text: 'Submit', handler: () => this.executeSubmit() }
+      ]
+    });
+    await alert.present();
   }
 
-  async onSubmit() {
-    if (this.submitForm.invalid || !this.selectedFile) return;
-
-    const loading = await this.loadingCtrl.create({
-      message: 'Uploading document...',
-    });
-    await loading.present();
+  private async executeSubmit() {
+    const loader = await this.loading.create({ message: 'Uploading...', spinner: 'crescent' });
+    await loader.present();
 
     const formData = new FormData();
-    formData.append('file', this.selectedFile);
-    formData.append('jobType', this.submitForm.value.jobType);
-    formData.append('pageCount', this.submitForm.value.pageCount.toString());
-    
-    if (this.submitForm.value.scheduledTime) {
-      formData.append('scheduledTime', this.submitForm.value.scheduledTime);
-    }
+    formData.append('file', this.selectedFile!);
+    formData.append('description', this.description || '');
+    formData.append('copies', this.copies.toString());
+    formData.append('printMode', this.printMode);
+    formData.append('printSide', this.printSide);
+    formData.append('jobType', this.isBulk ? 'bulk' : 'normal');
+    const localDate = new Date(this.collectionSlot);
+    formData.append('collectionSlot', localDate.toISOString());
+    // Critical for your backend:
+    formData.append('pageCount', this.docPages.toString());
 
-    this.api.postMultipart<JobResponse>('/jobs', formData).subscribe({
-      next: (res: JobResponse) => {
-        loading.dismiss();
-        this.submittedJob = res;
-        // Wait for Angular to render the card before drawing QR
-        setTimeout(() => this.generateQRCode(res.qrToken), 100);
+    this.api.postMultipart('/jobs', formData).subscribe({
+      next: (res: any) => {
+        loader.dismiss();
+        this.navCtrl.navigateRoot(`/tabs/jobs`);
       },
       error: (err) => {
-        loading.dismiss();
-        this.showToast(err?.error?.message || 'Failed to submit job.', 'danger');
+        loader.dismiss();
+        this.showToast(err?.error?.message || 'Upload failed', 'danger');
       }
     });
   }
 
-  generateQRCode(token: string) {
-    if (this.canvas && token) {
-      QRCode.toCanvas(this.canvas.nativeElement, token, {
-        width: 250,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#ffffff'
-        }
-      }, (error) => {
-        if (error) console.error('QR Gen Error:', error);
-      });
-    }
+  private initDateConstraints() {
+    const now = new Date();
+    
+    // Shift "now" by the local timezone offset so toISOString() 
+    // gives us the local time instead of UTC
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    const localISOTime = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
+    
+    this.today = localISOTime;
+    this.collectionSlot = localISOTime;
+
+    // Set Max Date to 2 days from now (or keep it as tomorrow)
+    const max = new Date(now.getTime() + (24 * 60 * 60 * 1000) - tzOffset);
+    this.maxDate = max.toISOString().slice(0, 16);
   }
 
-  async showToast(message: string, color: 'success' | 'danger') {
-    const toast = await this.toastCtrl.create({
-      message,
-      duration: 3000,
-      color,
-      position: 'bottom'
-    });
-    await toast.present();
-  }
-
-  goToJobsList() {
-    this.router.navigate(['/tabs/jobs']);
-  }
-
-  resetForm() {
-    this.submittedJob = null;
-    this.selectedFile = null;
-    this.submitForm.reset({ jobType: 'normal' });
+  async showToast(msg: string, color: string = 'primary') {
+    const t = await this.toast.create({ message: msg, duration: 2500, color, position: 'bottom' });
+    t.present();
   }
 }

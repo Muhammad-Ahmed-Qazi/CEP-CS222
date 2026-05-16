@@ -35,4 +35,8 @@ export class ApiService {
   postMultipart<T>(endpoint: string, formData: FormData): Observable<T> {
     return this.http.post<T>(`${this.baseUrl}${endpoint}`, formData);
   }
+
+  patch<T>(endpoint: string, body: any) {
+  return this.http.patch<T>(`${this.baseUrl}${endpoint}`, body);
+}
 }
