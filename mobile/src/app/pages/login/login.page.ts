@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { ToastController } from '@ionic/angular';
+import { NavController, ToastController, LoadingController } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -12,46 +11,62 @@ import { AuthService } from '../../services/auth.service';
 })
 export class LoginPage implements OnInit {
   loginForm!: FormGroup;
-  isLoading = false;
+  showPassword = false;
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router,
-    private toastController: ToastController
-  ) {}
+    private navCtrl: NavController,
+    private toastCtrl: ToastController,
+    private loadingCtrl: LoadingController
+  ) { }
 
   ngOnInit() {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required]]
+      password: ['', [Validators.required, Validators.minLength(6)]]
     });
+  }
+
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
   }
 
   async onSubmit() {
-    if (this.loginForm.invalid) return;
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      return;
+    }
 
-    this.isLoading = true;
+    const loading = await this.loadingCtrl.create({
+      message: 'Signing in...',
+      spinner: 'crescent',
+      mode: 'ios'
+    });
+    await loading.present();
+
     const { email, password } = this.loginForm.value;
 
-    try {
-      await this.authService.login(email, password).toPromise();
-      this.loginForm.reset();
-      this.router.navigate(['/tabs/jobs'], { replaceUrl: true });
-    } catch (error: any) {
-      this.showToast(error?.error?.message || 'Login failed. Please check your credentials.');
-    } finally {
-      this.isLoading = false;
-    }
+    this.authService.login(email, password).subscribe({
+      next: (res: { access_token: string }) => {
+        loading.dismiss();
+        this.authService.setToken(res.access_token);
+        this.navCtrl.navigateRoot('/tabs/jobs', { animated: true, animationDirection: 'forward' });
+      },
+      error: async (err) => {
+        loading.dismiss();
+        const toast = await this.toastCtrl.create({
+          message: err.error?.message || 'Invalid email or password credentials.',
+          duration: 3000,
+          color: 'danger',
+          position: 'bottom',
+          mode: 'ios'
+        });
+        toast.present();
+      }
+    });
   }
 
-  async showToast(message: string) {
-    const toast = await this.toastController.create({
-      message,
-      duration: 3000,
-      color: 'danger',
-      position: 'bottom'
-    });
-    await toast.present();
-  }
+  goToRegister() { this.navCtrl.navigateForward('/register'); }
+  goToForgotPassword() { this.navCtrl.navigateForward('/forgot-password'); }
 }

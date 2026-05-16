@@ -37,7 +37,14 @@
             ],
             "scripts": [],
             "allowedCommonJsDependencies": [
-              "qrCode"
+              "qrCode",
+              "canvg",
+              "html2canvas",
+              "jspdf",
+              "qrcode",
+              "rgbcolor",
+              "raf",
+              "core-js"
             ]
           },
           "configurations": {

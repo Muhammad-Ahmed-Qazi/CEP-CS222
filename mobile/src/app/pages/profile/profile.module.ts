@@ -1,20 +1,26 @@
-import { IonicModule } from '@ionic/angular';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ProfilePage } from './profile.page';
-import { ExploreContainerComponentModule } from '../../explore-container/explore-container.module';
+import { IonicModule } from '@ionic/angular';
 
 import { ProfilePageRoutingModule } from './profile-routing.module';
+import { 
+  ProfilePage, 
+  TransactionDetailModalComponent, 
+  ChangePasswordModalComponent 
+} from './profile.page';
 
 @NgModule({
   imports: [
-    IonicModule,
     CommonModule,
     FormsModule,
-    ExploreContainerComponentModule,
+    IonicModule,
     ProfilePageRoutingModule
   ],
-  declarations: [ProfilePage]
+  declarations: [
+    ProfilePage,
+    TransactionDetailModalComponent, // 🌟 Declare here so it knows Ionic components & Pipes
+    ChangePasswordModalComponent    // 🌟 Declare here so it can use ngModel and Ionic
+  ]
 })
 export class ProfilePageModule {}

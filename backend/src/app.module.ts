@@ -13,6 +13,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { KioskModule } from './kiosk/kiosk.module';
 import { OperatorModule } from './operator/operator.module';
 import { LoggingModule } from './logging/logging.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { LoggingModule } from './logging/logging.module';
     KioskModule,
     OperatorModule,
     LoggingModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService, DbService],

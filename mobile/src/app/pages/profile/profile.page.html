@@ -1,75 +1,202 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>My Profile</ion-title>
-    <ion-buttons slot="end">
-      <ion-button (click)="logout()">
-        <ion-icon name="log-out-outline" slot="icon-only"></ion-icon>
-      </ion-button>
-    </ion-buttons>
+<ion-header class="ion-no-border">
+  <ion-toolbar color="white">
+    <ion-title style="font-family: 'Inter', sans-serif; font-weight: 700;">My Profile</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding">
+<ion-content class="ion-padding-horizontal">
 
-  <div *ngIf="isLoading" class="ion-text-center ion-padding">
-    <ion-spinner name="crescent"></ion-spinner>
+  <!-- Core Pull to Refresh Utility Hook -->
+  <ion-refresher slot="fixed" (ionRefresh)="loadAllData($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Hidden Native Input Bridge for Profile Gallery Upload Pipeline -->
+  <input type="file" #fileInput style="display: none" accept="image/*" (change)="onFileSelected($event)">
+
+  <!-- ----------------------------------------------------------------- -->
+  <!-- SKELETON PLACEHOLDER LOADING STATE -->
+  <!-- ----------------------------------------------------------------- -->
+  <div *ngIf="isLoading && !profile" class="ion-padding-top">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 30px;">
+      <ion-skeleton-text animated style="width: 90px; height: 90px; border-radius: 50%;"></ion-skeleton-text>
+      <ion-skeleton-text animated style="width: 160px; height: 24px;"></ion-skeleton-text>
+      <ion-skeleton-text animated style="width: 220px; height: 16px;"></ion-skeleton-text>
+    </div>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="6" *ngFor="let item of [1,2,3,4]">
+          <ion-card style="height: 90px; margin: 0;"></ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
   </div>
 
-  <ng-container *ngIf="!isLoading && profile">
-    <div class="profile-header ion-text-center ion-margin-bottom">
-      <ion-avatar class="large-avatar">
-        <img src="https://ui-avatars.com/api/?name={{profile.firstName}}+{{profile.lastName}}&background=random" />
-      </ion-avatar>
-      <h2>{{ profile.firstName }} {{ profile.lastName }}</h2>
-      <p>{{ profile.email }}</p>
-      <ion-badge color="medium">{{ profile.role | uppercase }}</ion-badge>
-    </div>
+  <!-- ----------------------------------------------------------------- -->
+  <!-- ACTUAL RENDERED UI VIEWS CONTENT PROFILE -->
+  <!-- ----------------------------------------------------------------- -->
+  <div *ngIf="profile && summary" class="profile-main-body" style="font-family: 'Inter', sans-serif;">
 
-    <ion-card class="balance-card">
-      <ion-card-content class="ion-text-center">
-        <ion-text color="medium">
-          <p>Available Balance</p>
-        </ion-text>
-
-        <!-- Displaying PKR with 2 decimal places -->
-        <h1 class="balance-amount" style="font-size: 2.5rem; font-weight: 700; color: var(--ion-color-primary);">
-          {{ (profile.accountBalance || 0) | number:'1.2-2' }}
-          <small style="font-size: 1rem; color: var(--ion-color-step-600);">PKR</small>
-        </h1>
-
-        <ion-button expand="block" fill="outline" class="ion-margin-top" (click)="presentTopUpPrompt()">
-          <ion-icon name="add-circle-outline" slot="start"></ion-icon>
-          Top Up Balance
-        </ion-button>
-      </ion-card-content>
-    </ion-card>
-
-    <ion-list>
-      <ion-list-header>
-        <ion-label>Recent Transactions</ion-label>
-      </ion-list-header>
-
-      <div *ngIf="transactions.length === 0" class="ion-text-center ion-padding">
-        <p style="color: #666;">No recent transactions.</p>
+    <!-- SECTION 1 — PROFILE HEADER -->
+    <section class="profile-header-section ion-text-center ion-padding-top ion-padding-bottom">
+      <div class="avatar-container" style="position: relative; display: inline-block; margin-bottom: 12px;"
+        (click)="openAvatarActions()">
+        <img *ngIf="profile?.profilePicture"
+          [src]="profile.profilePicture.startsWith('http') ? profile.profilePicture : (baseUrl + '/' + profile.profilePicture)"
+          class="user-avatar-img" />
+        <div *ngIf="!profile.profilePicture" class="initials-avatar-fallback">
+          {{ userInitials }}
+        </div>
+        <div class="camera-badge">
+          <ion-icon name="camera"></ion-icon>
+        </div>
       </div>
 
-      <ion-item *ngFor="let txn of transactions">
-        <ion-icon [name]="txn.transactionType === 'topup' ? 'wallet-outline' : 'print-outline'"
-          [color]="txn.transactionType === 'topup' ? 'success' : 'danger'" slot="start">
-        </ion-icon>
+      <!-- Standard Presentation View -->
+      <div *ngIf="!isEditingName" class="name-display-row"
+        style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <h2 class="full-name-text">{{ profile.firstName }} {{ profile.lastName }}</h2>
+        <ion-button fill="clear" size="small" class="edit-profile-btn" (click)="toggleEditMode()">
+          <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+        </ion-button>
+      </div>
 
-        <ion-label>
-          <h3>
-            {{ txn.transactionType === 'topup' ? 'Balance Top Up' : 'Print Job #' + (txn.jobId || 'N/A') }}
-          </h3>
-          <p>{{ txn.transactionDate | date:'medium' }}</p>
-        </ion-label>
+      <!-- Inline Active Mode Editing Name Panel Inputs -->
+      <div *ngIf="isEditingName" class="name-edit-panel ion-padding-horizontal">
+        <ion-item lines="none" class="inline-edit-item">
+          <ion-input [(ngModel)]="editFirstName" placeholder="First Name"></ion-input>
+        </ion-item>
+        <ion-item lines="none" class="inline-edit-item" style="margin-top: 6px;">
+          <ion-input [(ngModel)]="editLastName" placeholder="Last Name"></ion-input>
+        </ion-item>
+        <div style="display: flex; gap: 8px; justify-content: center; margin-top: 10px;">
+          <ion-button size="small" fill="outline" color="medium" (click)="toggleEditMode()">Cancel</ion-button>
+          <ion-button size="small" style="--background: #00B4D8;" (click)="saveProfileName()">Save</ion-button>
+        </div>
+      </div>
 
-        <ion-note slot="end" [color]="txn.transactionType === 'topup' ? 'success' : 'danger'">
-          {{ txn.transactionType === 'topup' ? '+' : '' }}{{ txn.amount | number:'1.2-2' }} PKR
-        </ion-note>
-      </ion-item>
-    </ion-list>
-  </ng-container>
+      <p class="user-email-text">{{ profile.email }}</p>
+      <div class="role-badge-container">
+        <span class="role-outline-badge">{{ profile.role }}</span>
+      </div>
+    </section>
 
+    <!-- SECTION 2 — ACCOUNT SUMMARY STATS GRID (2x2) -->
+    <section class="stats-grid-section ion-margin-bottom">
+      <ion-grid class="ion-no-padding">
+        <ion-row style="gap: 12px; justify-content: space-between; flex-wrap: nowrap;" class="ion-margin-bottom">
+          <ion-col class="stat-card-box">
+            <ion-icon name="print-outline" class="stat-card-icon"></ion-icon>
+            <span class="stat-card-label">Total Jobs</span>
+            <h3 class="stat-card-value">{{ summary.totalJobs }}</h3>
+          </ion-col>
+          <ion-col class="stat-card-box">
+            <ion-icon name="document-text-outline" class="stat-card-icon"></ion-icon>
+            <span class="stat-card-label">Pages Printed</span>
+            <h3 class="stat-card-value">{{ summary.totalPages }}</h3>
+          </ion-col>
+        </ion-row>
+        <ion-row style="gap: 12px; justify-content: space-between; flex-wrap: nowrap;">
+          <ion-col class="stat-card-box">
+            <ion-icon name="cash-outline" class="stat-card-icon"></ion-icon>
+            <span class="stat-card-label">Total Spent</span>
+            <h3 class="stat-card-value">PKR {{ summary.totalSpend }}</h3>
+          </ion-col>
+          <ion-col class="stat-card-box">
+            <ion-icon name="leaf-outline" class="stat-card-icon"></ion-icon>
+            <span class="stat-card-label">Pages Saved</span>
+            <h3 class="stat-card-value">{{ summary.pagesSavedByDuplex }}</h3>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </section>
+
+    <!-- SECTION 3 — BALANCE CARD & DEPOSIT PURSE -->
+    <section class="balance-card-section ion-margin-bottom">
+      <!-- Reactive Structural Warning Alert Flag Banner -->
+      <div *ngIf="profile.accountBalance < 50" class="low-balance-banner">
+        <ion-icon name="warning-outline"></ion-icon>
+        <span>Low balance — top up to continue printing</span>
+      </div>
+
+      <div class="main-balance-container">
+        <span class="balance-label-title">Available Balance</span>
+        <h1 class="balance-large-display">PKR {{ profile.accountBalance }}</h1>
+        <ion-button expand="block" mode="ios" class="topup-action-btn" (click)="openTopUpAlert()">
+          <ion-icon slot="start" name="wallet-outline"></ion-icon>
+          Top Up Balance
+        </ion-button>
+      </div>
+    </section>
+
+    <!-- SECTION 4 — RECENT TRANSACTIONS ARRAYS LIST -->
+    <section class="recent-transactions-section ion-margin-bottom">
+      <div class="section-header-row"
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h4 class="block-title-text">Recent Transactions</h4>
+        <a class="see-all-toggle-link" (click)="showAllTransactions = !showAllTransactions">
+          {{ showAllTransactions ? 'Show Less' : 'See All' }}
+        </a>
+      </div>
+
+      <div *ngIf="transactions.length === 0" class="empty-tx-placeholder ion-text-center ion-padding">
+        <p style="color: #8E8E93; font-size: 14px;">No transactions recorded yet.</p>
+      </div>
+
+      <ion-list lines="none" class="tx-list-group" *ngIf="transactions.length > 0">
+        <div class="tx-row-item" *ngFor="let tx of visibleTransactions" (click)="openTransactionModal(tx)">
+
+          <!-- Left Icon Column Mapping Context -->
+          <div class="tx-icon-frame" [ngClass]="tx.transactionType">
+            <ion-icon
+              [name]="tx.transactionType === 'deduction' ? 'print-outline' : (tx.transactionType === 'topup' ? 'wallet-outline' : 'refresh-outline')"></ion-icon>
+          </div>
+
+          <!-- Central Tracking Context Information Descriptor -->
+          <div class="tx-details-middle">
+            <span class="tx-main-title">
+              {{ tx.transactionType === 'deduction' ? 'Print Job #' + tx.jobId : (tx.transactionType === 'topup' ?
+              'Balance Top Up' : 'Refund — Job #' + tx.jobId) }}
+            </span>
+            <span class="tx-timestamp-sub">{{ tx.transactionDate | date:'mediumDate' }}</span>
+          </div>
+
+          <!-- Right Column Monetary Displacement Indicators -->
+          <div class="tx-amount-right">
+            <span [style.color]="tx.transactionType === 'deduction' ? '#FF3B30' : '#34C759'"
+              style="font-weight: 600; font-size: 14px;">
+              {{ tx.transactionType === 'deduction' ? '-' : '+' }}PKR {{ tx.amount }}
+            </span>
+          </div>
+        </div>
+      </ion-list>
+    </section>
+
+    <!-- SECTION 5 — SYSTEM ACCOUNT ACTIONS LIST MENU -->
+    <section class="account-actions-menu ion-padding-bottom">
+      <h4 class="block-title-text" style="margin-bottom: 12px;">Account Actions</h4>
+
+      <div class="action-list-card">
+        <div class="action-menu-row" (click)="openChangePasswordModal()">
+          <ion-icon name="key-outline" class="row-lead-icon"></ion-icon>
+          <span class="row-label-text">Change Password</span>
+          <ion-icon name="chevron-forward-outline" class="row-tail-arrow"></ion-icon>
+        </div>
+
+        <div class="action-menu-row destructive" (click)="confirmDeleteAccount()">
+          <ion-icon name="trash-outline" class="row-lead-icon"></ion-icon>
+          <span class="row-label-text">Delete Account</span>
+          <ion-icon name="chevron-forward-outline" class="row-tail-arrow"></ion-icon>
+        </div>
+
+        <!-- Update this specific block at the bottom of your HTML file -->
+        <div class="action-menu-row" (click)="confirmLogout()" style="border-bottom: none;">
+          <ion-icon name="log-out-outline" class="row-lead-icon" style="color: #A4A4B5;"></ion-icon>
+          <span class="row-label-text">Logout</span>
+          <ion-icon name="chevron-forward-outline" class="row-tail-arrow"></ion-icon>
+        </div>
+      </div>
+    </section>
+
+  </div>
 </ion-content>

@@ -4,6 +4,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { DbService } from '../db/db.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -11,6 +12,7 @@ import * as oracledb from 'oracledb';
 import { v4 as uuidv4 } from 'uuid';
 import { calculateJobDetails, PricingParams } from './pricing.engine';
 import { LoggingService } from 'src/logging/logging.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 export interface JobFilters {
   status?: string;
@@ -47,6 +49,7 @@ export interface InvoiceData {
 
 @Injectable()
 export class JobsService {
+  private readonly logger = new Logger(JobsService.name);
   constructor(
     private readonly db: DbService,
     private readonly notificationsService: NotificationsService,
@@ -67,6 +70,35 @@ export class JobsService {
     });
     return mapped;
   }
+
+  // @Cron(CronExpression.EVERY_10_SECONDS)
+  // async handleAutoDiscardJobs() {
+  //   this.logger.log('Executing automated background sweep for expired uncollected jobs...');
+
+  //   // 🌟 ORACLE FIXED QUERY: Swap '?' with ':now'
+  //   const query = `
+  //   UPDATE HAS_STATUS hs
+  //     SET hs.status_id = (SELECT s.status_id FROM JOB_STATUS s WHERE s.status_name = 'Discarded')
+  //     WHERE hs.status_id = (SELECT s.status_id FROM JOB_STATUS s WHERE s.status_name = 'Binned')
+  //     AND hs.job_id IN (
+  //     SELECT pj.job_id 
+  //     FROM PRINT_JOB pj 
+  //     WHERE pj.expiry_time <= SYSTIMESTAMP)
+  // `;
+
+  //   try {
+  //     // If your custom DbService execute function handles standard arrays:
+  //     const conn = await this.db.getConnection();
+  //     const result = await conn.execute(query);
+
+  //     // NOTE: If the array approach still complains, Oracle might be expecting an object map like this:
+  //     // const result = await this.db.execute(query, { now });
+
+  //     this.logger.log('Automated background sweep completed successfully.');
+  //   } catch (error) {
+  //     this.logger.error('Failed to execute background status sweep:', error);
+  //   }
+  // }
 
   async submitJob(
     userId: number,
@@ -575,7 +607,7 @@ export class JobsService {
         query += ` AND Status_Name = :status`;
         binds.status = filters.status;
       }
-      
+
       if (filters.jobType) {
         query += ` AND Job_Type = :jobType`;
         binds.jobType = filters.jobType;

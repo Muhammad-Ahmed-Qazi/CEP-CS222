@@ -1,9 +1,8 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { ToastController } from '@ionic/angular';
+import { NavController, ToastController, LoadingController } from '@ionic/angular';
+import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
-import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-register',
@@ -11,95 +10,138 @@ import { Subscription } from 'rxjs';
   styleUrls: ['./register.page.scss'],
   standalone: false,
 })
-export class RegisterPage implements OnInit, OnDestroy {
+export class RegisterPage implements OnInit {
   registerForm!: FormGroup;
-  isLoading = false;
-  private roleSub!: Subscription;
+  passwordStrength = 0;
+  passwordStrengthLabel = 'Weak';
+  passwordStrengthColor = '#FF3B30';
 
   constructor(
     private fb: FormBuilder,
+    private api: ApiService,
     private authService: AuthService,
-    private router: Router,
-    private toastController: ToastController
-  ) {}
+    private navCtrl: NavController,
+    private toastCtrl: ToastController,
+    private loadingCtrl: LoadingController
+  ) { }
 
   ngOnInit() {
     this.registerForm = this.fb.group({
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
       role: ['student', Validators.required],
-      // Conditional fields initialized without validators
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', Validators.required],
+      // Dynamic Fields Conditional Setup
       major: [''],
-      studentBatch: [''],
+      batch: [''],
       department: [''],
-      facultyRank: ['']
+      rank: ['']
+    }, { validators: this.passwordMatchValidator });
+
+    // Handle shifting validation criteria depending on checked profile role status
+    this.registerForm.get('role')?.valueChanges.subscribe(role => {
+      this.updateConditionalValidators(role);
     });
 
-    // Run once to set initial validation state based on default 'student' value
-    this.updateRoleValidators('student');
+    // Run first initialization alignment
+    this.updateConditionalValidators('student');
 
-    // Listen for role changes to dynamically update validation requirements
-    this.roleSub = this.registerForm.get('role')!.valueChanges.subscribe(role => {
-      this.updateRoleValidators(role);
+    // Monitor password entry engine for tracking metric meters
+    this.registerForm.get('password')?.valueChanges.subscribe(pass => {
+      this.checkPasswordStrength(pass);
     });
   }
 
-  ngOnDestroy() {
-    if (this.roleSub) {
-      this.roleSub.unsubscribe();
-    }
+  passwordMatchValidator(g: FormGroup) {
+    const pass = g.get('password')?.value;
+    const confirm = g.get('confirmPassword')?.value;
+    return pass === confirm ? null : { mismatch: true };
   }
 
-  private updateRoleValidators(role: string) {
-    const studentControls = ['major', 'studentBatch'];
-    const facultyControls = ['department', 'facultyRank'];
+  updateConditionalValidators(role: 'student' | 'faculty') {
+    const studentFields = ['major', 'batch'];
+    const facultyFields = ['department', 'rank'];
 
     if (role === 'student') {
-      studentControls.forEach(ctrl => this.registerForm.get(ctrl)?.setValidators([Validators.required]));
-      facultyControls.forEach(ctrl => {
-        this.registerForm.get(ctrl)?.clearValidators();
-        this.registerForm.get(ctrl)?.reset();
+      studentFields.forEach(f => this.registerForm.get(f)?.setValidators([Validators.required]));
+      facultyFields.forEach(f => {
+        this.registerForm.get(f)?.clearValidators();
+        this.registerForm.get(f)?.setValue('');
       });
-    } else if (role === 'faculty') {
-      facultyControls.forEach(ctrl => this.registerForm.get(ctrl)?.setValidators([Validators.required]));
-      studentControls.forEach(ctrl => {
-        this.registerForm.get(ctrl)?.clearValidators();
-        this.registerForm.get(ctrl)?.reset();
+    } else {
+      facultyFields.forEach(f => this.registerForm.get(f)?.setValidators([Validators.required]));
+      studentFields.forEach(f => {
+        this.registerForm.get(f)?.clearValidators();
+        this.registerForm.get(f)?.setValue('');
       });
     }
+    studentFields.concat(facultyFields).forEach(f => this.registerForm.get(f)?.updateValueAndValidity({ emitEvent: false }));
+  }
 
-    // Trigger re-evaluation of the form's validity state
-    studentControls.concat(facultyControls).forEach(ctrl => {
-      this.registerForm.get(ctrl)?.updateValueAndValidity();
-    });
+  checkPasswordStrength(pass: string) {
+    if (!pass) {
+      this.passwordStrength = 0;
+      this.passwordStrengthLabel = 'Empty';
+      return;
+    }
+    let score = 0;
+    if (pass.length >= 6) score += 30;
+    if (pass.length >= 10) score += 20;
+    if (/[A-Z]/.test(pass)) score += 25;
+    if (/[0-9]/.test(pass)) score += 25;
+
+    this.passwordStrength = score;
+    if (score < 50) {
+      this.passwordStrengthLabel = 'Weak';
+      this.passwordStrengthColor = '#FF3B30';
+    } else if (score < 80) {
+      this.passwordStrengthLabel = 'Medium';
+      this.passwordStrengthColor = '#FFCC00';
+    } else {
+      this.passwordStrengthLabel = 'Strong';
+      this.passwordStrengthColor = '#34C759';
+    }
+  }
+
+  setRole(selectedRole: 'student' | 'faculty') {
+    this.registerForm.get('role')?.setValue(selectedRole);
   }
 
   async onSubmit() {
-    if (this.registerForm.invalid) return;
-
-    this.isLoading = true;
-    
-    try {
-      await this.authService.register(this.registerForm.value).toPromise();
-      this.registerForm.reset();
-      this.showToast('Registration successful! Please log in.', 'success');
-      this.router.navigate(['/login'], { replaceUrl: true });
-    } catch (error: any) {
-      this.showToast(error?.error?.message || 'Registration failed. Please try again.', 'danger');
-    } finally {
-      this.isLoading = false;
+    if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
+      return;
     }
+
+    const loading = await this.loadingCtrl.create({
+      message: 'Creating account...',
+      spinner: 'crescent',
+      mode: 'ios'
+    });
+    await loading.present();
+
+    this.api.post<{ access_token: string, message: string, userId: string }>('/auth/register', this.registerForm.value).subscribe({
+      next: (res) => {
+        loading.dismiss();
+        // Task 5: Auto login after registration success block
+        this.authService.setToken(res.access_token);
+        this.navCtrl.navigateRoot('/tabs/jobs', { animated: true, animationDirection: 'forward' });
+      },
+      error: async (err) => {
+        loading.dismiss();
+        const toast = await this.toastCtrl.create({
+          message: err.error?.message || 'Registration failed. Try changing registration email context parameters.',
+          duration: 3500,
+          color: 'danger',
+          position: 'bottom',
+          mode: 'ios'
+        });
+        toast.present();
+      }
+    });
   }
 
-  async showToast(message: string, color: 'success' | 'danger') {
-    const toast = await this.toastController.create({
-      message,
-      duration: 3000,
-      color,
-      position: 'bottom'
-    });
-    await toast.present();
-  }
+  goBack() { this.navCtrl.back(); }
 }

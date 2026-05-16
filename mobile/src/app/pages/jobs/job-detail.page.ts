@@ -14,6 +14,7 @@ export interface JobDetails extends Job {
   printSide: string;
   pricePerPage?: number;
   collectionSlot: string; // ISO string or Date timestamp tracking expiration boundaries
+  expiryTime?: string; // Optional field for direct expiration timestamp if needed for logic separation
 }
 
 @Component({
@@ -79,6 +80,7 @@ export class JobDetailPage implements OnInit, OnDestroy {
           res.thumbnailPath = `uploads/thumbnails/${baseName}.jpg`;
         }
         this.job = res;
+        this.job.expiryTime = res.expiryTime;
         this.isLoading = false;
 
         this.updateCountdown(); // Instant first run calculation assignment
@@ -110,12 +112,12 @@ export class JobDetailPage implements OnInit, OnDestroy {
   }
 
   updateCountdown() {
-    if (!this.job || this.job.statusName !== 'Binned' || !this.job.collectionSlot) {
+    if (!this.job || this.job.statusName !== 'Binned' || !this.job.expiryTime) {
       return;
     }
 
     // Adjust target date parsing calculation according to your business logic specifications.
-    const targetTime = new Date(this.job.collectionSlot).getTime() + (3 * 60 * 60 * 1000);
+    const targetTime = new Date(this.job.expiryTime).getTime();
     const now = new Date().getTime();
     const difference = targetTime - now;
 
