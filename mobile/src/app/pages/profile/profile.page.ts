@@ -54,8 +54,6 @@ export class ProfilePage implements OnInit {
     // Fetch Profile from /auth/me
     this.api.get<UserProfile>('/auth/me').subscribe({
       next: (res) => {
-        // Log to verify exact field names and casing (e.g., accountBalance vs ACCOUNT_BALANCE)
-        console.log('Full Profile Response from /auth/me:', res); 
         this.profile = res;
         this.loadTransactions(); 
       },
@@ -70,7 +68,6 @@ export class ProfilePage implements OnInit {
   loadTransactions() {
     this.api.get<Transaction[]>('/transactions').subscribe({
       next: (res) => {
-        console.log('Transactions received:', res);
         this.transactions = res;
         this.isLoading = false;
       },

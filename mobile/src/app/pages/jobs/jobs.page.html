@@ -1,96 +1,101 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>My Print Jobs</ion-title>
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>My Jobs</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding">
-  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+<ion-content class="ion-padding-bottom">
+  <ion-refresher slot="fixed" (ionRefresh)="loadData($event)">
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
-  <div *ngIf="isLoading">
-    <ion-card *ngFor="let i of [1,2,3]">
-      <ion-card-header>
-        <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
-        <ion-skeleton-text animated style="width: 40%"></ion-skeleton-text>
-      </ion-card-header>
-    </ion-card>
+  <div class="metrics-grid ion-padding">
+    <div class="metric-chip">
+      <span class="label">Total Jobs</span>
+      <span class="value">{{ summary?.totalJobs || 0 }}</span>
+    </div>
+    <div class="metric-chip">
+      <span class="label">Total Pages</span>
+      <span class="value">{{ summary?.totalPages || 0 }}</span>
+    </div>
+    <div class="metric-chip interactive" (click)="goToProfile()">
+      <span class="label">Wallet Balance</span>
+      <span class="value highlight">PKR {{ currentBalance }}</span>
+    </div>
+    <div class="metric-chip">
+      <span class="label">Pages Saved</span>
+      <span class="value success">{{ summary?.pagesSavedByDuplex || 0 }}</span>
+    </div>
   </div>
 
-  <div class="empty-state ion-text-center ion-padding" *ngIf="!isLoading && jobs.length === 0">
-    <ion-icon name="document-text-outline" style="font-size: 64px; color: #ccc;"></ion-icon>
-    <h3>No Print Jobs</h3>
-    <p>Submit a document to see it here.</p>
-    <ion-button routerLink="/tabs/submit" fill="clear">Submit a Job</ion-button>
+  <div class="controls-section ion-padding-horizontal">
+    <ion-searchbar [(ngModel)]="searchQuery" placeholder="Search files..."></ion-searchbar>
+    
+    <div class="filter-container">
+      <ion-segment [(ngModel)]="activeTab" (ionChange)="onTabChange()" mode="ios">
+        <ion-segment-button value="active">Active</ion-segment-button>
+        <ion-segment-button value="history">History</ion-segment-button>
+      </ion-segment>
+
+      <ion-item class="status-filter-item" lines="none">
+        <ion-icon name="filter" slot="start" color="medium"></ion-icon>
+        <ion-select [(ngModel)]="statusFilter" interface="popover" placeholder="All Statuses">
+          <ion-select-option value="All">All Statuses</ion-select-option>
+          <ion-select-option *ngFor="let status of availableStatuses" [value]="status">
+            <!-- Transforms DB 'Binned' status to 'Ready for Pickup' inside dropdown labels for users -->
+            {{ status === 'Binned' ? 'Ready for Collection' : status }}
+          </ion-select-option>
+        </ion-select>
+      </ion-item>
+    </div>
   </div>
 
-  <ion-list *ngIf="!isLoading && jobs.length > 0">
-    <ion-card *ngFor="let job of jobs" (click)="openJobDetail(job)" class="ion-activatable ripple-parent">
-      <ion-ripple-effect></ion-ripple-effect>
-      <ion-card-header>
-        <ion-card-subtitle class="job-meta">
-          <span>{{ job.JOB_TYPE | titlecase }} Job</span>
-          <ion-badge [color]="getStatusColor(job.STATUS_NAME)">{{ job.STATUS_NAME }}</ion-badge>
-        </ion-card-subtitle>
-        <ion-card-title>ID: {{ job.JOB_ID }}</ion-card-title>
-      </ion-card-header>
-      <ion-card-content>
-        <ion-item lines="none" class="ion-no-padding">
-          <ion-icon name="copy-outline" slot="start" color="medium"></ion-icon>
-          <ion-label>
-            <p>Pages: {{ job.PAGE_COUNT }}</p>
-            <p>Submitted: {{ job.SUBMISSION_TIME | date:'medium' }}</p>
-          </ion-label>
-        </ion-item>
-      </ion-card-content>
-    </ion-card>
-  </ion-list>
+  <div class="empty-state" *ngIf="!isLoading && filteredJobs.length === 0">
+    <ion-icon name="document-text-outline"></ion-icon>
+    <h3>No Jobs Found</h3>
+    <p>Submit a document or adjust your filters.</p>
+  </div>
 
-  <ion-modal [isOpen]="isModalOpen" (didDismiss)="closeModal()" (didPresent)="renderQR()">
-    <ng-template>
-      <ion-header>
-        <ion-toolbar>
-          <ion-title>Job Details</ion-title>
-          <ion-buttons slot="end">
-            <ion-button (click)="closeModal()">Close</ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content class="ion-padding ion-text-center">
-        <ng-container *ngIf="selectedJob">
-          <h2>Job ID: {{ selectedJob.JOB_ID }}</h2>
-          <ion-badge [color]="getStatusColor(selectedJob.STATUS_NAME)" class="ion-margin-bottom">
-            {{ selectedJob.STATUS_NAME }}
-          </ion-badge>
+  <div class="job-list ion-padding-horizontal">
+    <div class="job-card" *ngFor="let job of filteredJobs" (click)="$event.stopPropagation(); goToDetail(job.jobId)"
+      [class.expired]="job.statusName === 'Discarded' || job.isExpired">
 
-          <div class="qr-container" *ngIf="selectedJob.STATUS_NAME === 'Pending'">
-            <p>Scan to print securely:</p>
-            <canvas #qrCanvas></canvas>
+      <div class="card-inner">
+        <div class="thumbnail">
+          <img [src]="job.thumbnailPath ? 'http://localhost:3000/' + job.thumbnailPath : 'assets/pdf-placeholder.png'"
+            onerror="this.src='assets/pdf-placeholder.png'; this.onerror=null;" alt="Job Preview" />
+        </div>
+
+        <div class="details" style="flex: 1; padding-right: 8px;">
+          <div class="badges-row" style="margin-bottom: 6px;">
+            <ion-badge [color]="getStatusColor(job.statusName)" style="font-size: 11px; padding: 4px 8px; letter-spacing: 0.3px;">
+              <!-- Readable transformation for user convenience -->
+              {{ (job.statusName === 'Binned' ? 'Ready for Collection' : job.statusName) | uppercase }}
+            </ion-badge>
+            <ion-badge color="medium" style="font-size: 11px; padding: 4px 8px; letter-spacing: 0.3px;">{{ job.jobType | uppercase }}</ion-badge>
           </div>
 
-          <ion-list class="ion-margin-top ion-text-left">
-            <ion-item>
-              <ion-label>
-                <h3>Document Path</h3>
-                <p>{{ selectedJob.DOCUMENT }}</p>
-              </ion-label>
-            </ion-item>
-            <ion-item>
-              <ion-label>
-                <h3>Priority Level</h3>
-                <p>{{ selectedJob.PRIORITY_LEVEL }}</p>
-              </ion-label>
-            </ion-item>
-            <ion-item *ngIf="selectedJob.SUBMISSION_TIME">
-              <ion-label>
-                <h3>Submitted</h3>
-                <p>{{ selectedJob.SUBMISSION_TIME | date:'medium' }}</p>
-              </ion-label>
-            </ion-item>
-          </ion-list>
-        </ng-container>
-      </ion-content>
-    </ng-template>
-  </ion-modal>
+          <div class="top-row">
+            <h4 class="truncate" style="margin: 2px 0 6px 0; font-size: 15px; font-weight: 600; color: var(--ion-color-dark);">
+              {{ job.description || job.document }}
+            </h4>
+          </div>
+
+          <div class="time-row" style="margin-bottom: 4px;">
+            <ion-icon name="time-outline"></ion-icon>
+            <span>Sent: {{ job.submissionTime | date:'short' }}</span>
+          </div>
+
+          <!-- 🌟 FIX: Checked exclusively against 'Binned' to display collection text warning -->
+          <div class="warning-row" *ngIf="job.statusName === 'Binned' && !job.isExpired">
+            <ion-text color="danger" style="display: flex; align-items: flex-start; gap: 4px; font-size: 12px; font-weight: 500; margin-top: 6px; line-height: 1.3;">
+              <ion-icon name="alert-circle-outline" style="font-size: 15px; flex-shrink: 0;"></ion-icon>
+              <span>Your time to collect this job is running out. View details to see remaining time.</span>
+            </ion-text>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </ion-content>

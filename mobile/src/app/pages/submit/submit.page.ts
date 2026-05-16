@@ -32,6 +32,7 @@ export class SubmitPage implements OnInit {
   maxDate: string = '';
   collectionSlot: string = '';
   currentBalance: number = 0;
+  thumbnailBlob: Blob | null = null;  // New property for holding binary form upload data
 
   constructor(
     private api: ApiService,
@@ -104,7 +105,16 @@ export class SubmitPage implements OnInit {
             canvas: canvas
           }).promise;
 
+          // Keep for UI preview binding
           this.thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+
+          // Convert the Canvas to a binary Blob and store it in state for the API upload
+          canvas.toBlob((blob) => {
+            if (blob) {
+              this.thumbnailBlob = blob;
+            }
+          }, 'image/jpeg', 0.8);
+
           this.cdr.detectChanges();
         }
       }
@@ -150,25 +160,41 @@ export class SubmitPage implements OnInit {
   }
 
   private async executeSubmit() {
+    if (!this.selectedFile || this.docPages === 0) {
+      this.showToast('Processing file...', 'warning');
+      return;
+    }
+
     const loader = await this.loading.create({ message: 'Uploading...', spinner: 'crescent' });
     await loader.present();
 
     const formData = new FormData();
-    formData.append('file', this.selectedFile!);
+    formData.append('file', this.selectedFile);
     formData.append('description', this.description || '');
     formData.append('copies', this.copies.toString());
     formData.append('printMode', this.printMode);
     formData.append('printSide', this.printSide);
     formData.append('jobType', this.isBulk ? 'bulk' : 'normal');
+    
     const localDate = new Date(this.collectionSlot);
     formData.append('collectionSlot', localDate.toISOString());
-    // Critical for your backend:
     formData.append('pageCount', this.docPages.toString());
+
+    // Dynamic naming extraction for the Thumbnail image matching your PDF target filename
+    if (this.thumbnailBlob) {
+      const originalName = this.selectedFile.name;
+      const baseName = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+      const thumbnailFileName = `${baseName}.jpg`;
+
+      // Append the blob with the specific name required by your system
+      formData.append('thumbnail', this.thumbnailBlob, thumbnailFileName);
+    }
 
     this.api.postMultipart('/jobs', formData).subscribe({
       next: (res: any) => {
         loader.dismiss();
-        this.navCtrl.navigateRoot(`/tabs/jobs`);
+        console.log('Upload Success:', res);
+        this.navCtrl.navigateRoot(`/tabs/jobs/`);
       },
       error: (err) => {
         loader.dismiss();

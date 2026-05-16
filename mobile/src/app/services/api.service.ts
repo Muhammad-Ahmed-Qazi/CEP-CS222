@@ -27,6 +27,13 @@ export class ApiService {
   }
 
   /**
+   * Standard DELETE request
+   */
+  delete<T>(endpoint: string): Observable<T> {
+    return this.http.delete<T>(`${this.baseUrl}${endpoint}`);
+  }
+
+  /**
    * Specialized POST for Files (Multipart FormData)
    * IMPORTANT: We do NOT set headers here. 
    * The browser automatically detects FormData and sets the correct 

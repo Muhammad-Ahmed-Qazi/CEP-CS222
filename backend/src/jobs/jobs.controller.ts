@@ -5,7 +5,6 @@ import {
   Body,
   UseGuards,
   UseInterceptors,
-  UploadedFile,
   Request,
   Param,
   Delete,
@@ -13,8 +12,9 @@ import {
   BadRequestException,
   Req,
   Query,
+  UploadedFiles,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JobFilters, JobsService } from './jobs.service';
 import { PDFDocument } from 'pdf-lib';
@@ -29,41 +29,76 @@ export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'file', maxCount: 1 },
+      { name: 'thumbnail', maxCount: 1 },
+    ]),
+  )
   async create(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles()
+    files: { file?: Express.Multer.File[]; thumbnail?: Express.Multer.File[] },
     @Body() body: any,
     @Request() req,
   ) {
-    if (!file) throw new BadRequestException('PDF file is required');
+    // Ensure the primary PDF file was uploaded
+    const pdfFile = files?.file?.[0];
+    if (!pdfFile) throw new BadRequestException('PDF file is required');
 
     // 1. Prepare naming and directories
-    const uploadDir = 'uploads'; // Relative directory
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    const uploadDir = 'uploads';
+    const thumbnailDir = path.join(uploadDir, 'thumbnails'); // "uploads/thumbnails"
 
-    // Format filename: file-[timestamp]-[random].pdf 
-    // We also replace spaces with hyphens and remove special characters
-    const cleanFileName = file.originalname.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '');
-    const fileName = `file-${Date.now()}-${Math.round(Math.random() * 1e9)}-${cleanFileName}`;
+    // Ensure target folders exist safely
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+    if (!fs.existsSync(thumbnailDir))
+      fs.mkdirSync(thumbnailDir, { recursive: true });
 
-    const filePath = path.join(uploadDir, fileName); // This results in "uploads/file-..."
+    // Generate ONE master unique tracking stamp for both files
+    const timestamp = Date.now();
+    const randomId = Math.round(Math.random() * 1e9);
+    const cleanFileName = pdfFile.originalname
+      .replace(/\s+/g, '-')
+      .replace(/[^a-zA-Z0-9.-]/g, '');
+
+    // PDF Master Name
+    const pdfName = `file-${timestamp}-${randomId}-${cleanFileName}`;
+    const pdfPath = path.join(uploadDir, pdfName);
 
     try {
-      // Save the file using the relative path
-      fs.writeFileSync(filePath, file.buffer);
+      // Save the PDF
+      fs.writeFileSync(pdfPath, pdfFile.buffer);
     } catch (err) {
       throw new BadRequestException('Failed to save file to server.');
+    }
+
+    // Handle the Thumbnail storage if provided by the frontend payload
+    const thumbnailFile = files?.thumbnail?.[0];
+
+    if (thumbnailFile) {
+      // Extract base name without its extension and swap it to .jpg
+      const baseName =
+        pdfName.substring(0, pdfName.lastIndexOf('.')) || pdfName;
+      const thumbnailName = `${baseName}.jpg`;
+      const thumbPath = path.join(thumbnailDir, thumbnailName);
+
+      try {
+        fs.writeFileSync(thumbPath, thumbnailFile.buffer);
+      } catch (err) {
+        console.error('Failed to write thumbnail file:', err);
+        // Don't crash the entire request if just the optional thumbnail creation fails
+      }
     }
 
     // 2. Extract Page Count from Buffer
     let pdfPageCount = 0;
     try {
-      const pdfDoc = await PDFDocument.load(file.buffer);
+      const pdfDoc = await PDFDocument.load(pdfFile.buffer);
       pdfPageCount = pdfDoc.getPageCount();
     } catch (e) {
-      throw new BadRequestException('Could not read PDF. File may be corrupted.');
+      throw new BadRequestException(
+        'Could not read PDF. File may be corrupted.',
+      );
     }
 
     const jobParams = {
@@ -75,16 +110,17 @@ export class JobsController {
       collectionSlot: body.collectionSlot,
     };
 
+    // Assuming calculateJobDetails is globally imported or in scope
     const calculatedDetails = calculateJobDetails(jobParams);
 
-    // 3. Pass the saved filePath to the service
-    return this.jobsService.submitJob(req.user.userId, req.user.role, file, {
+    // 3. Pass paths and metadata down to your database service
+    return this.jobsService.submitJob(req.user.userId, req.user.role, pdfFile, {
       ...body,
       pageCount: pdfPageCount,
       totalCost: calculatedDetails.totalCost,
       expiryTime: calculatedDetails.expiryTime,
       collectionSlot: calculatedDetails.calculatedSlot || body.collectionSlot,
-      savedPath: filePath.replace(/\\/g, '/'), // New field
+      savedPath: pdfPath.replace(/\\/g, '/'),
     });
   }
 
@@ -113,9 +149,12 @@ export class JobsController {
   async reprintJob(
     @Param('id', ParseIntPipe) id: number,
     @Body('collectionSlot') collectionSlot: string,
-    @Request() req
+    @Request() req,
   ) {
-    if (!collectionSlot) throw new BadRequestException('collectionSlot is required for reprinting');
+    if (!collectionSlot)
+      throw new BadRequestException(
+        'collectionSlot is required for reprinting',
+      );
     return this.jobsService.reprintJob(id, req.user.userId, collectionSlot);
   }
 
@@ -132,6 +171,7 @@ export class JobsController {
     @Query('from') from?: string,
     @Query('to') to?: string,
     @Query('search') search?: string,
+    
   ) {
     const filters: JobFilters = { status, jobType, from, to, search };
     // This service method should now be your single source of truth for fetching jobs

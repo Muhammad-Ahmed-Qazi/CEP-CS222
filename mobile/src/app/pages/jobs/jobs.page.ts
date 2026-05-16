@@ -1,109 +1,168 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { ToastController } from '@ionic/angular';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { NavController, ToastController } from '@ionic/angular';
 import { ApiService } from '../../services/api.service';
-import * as QRCode from 'qrcode';
+import { Subscription } from 'rxjs';
 
-export interface PrintJob {
-  JOB_ID: number;
-  DOCUMENT: string;
-  SUBMISSION_TIME: string;
-  COMPLETION_TIME: string | null;
-  PAGE_COUNT: number;
-  QR_SECURE_TOKEN: string;
-  PRIORITY_LEVEL: number;
-  JOB_TYPE: string;
-  SCHEDULED_TIME: string | null;
-  STATUS_NAME: 'Pending' | 'Printing' | 'Binned' | 'Collected' | 'Discarded';
+export interface SummaryMetrics {
+  totalJobs: number;
+  totalSpend: number;
+  currentBalance: number;
+  totalPages: number;
+  pagesSavedByDuplex: number;
+}
+
+export interface Job {
+  jobId: number;
+  document: string;
+  description?: string;
+  statusName: string; // 'Pending' | 'Printing' | 'Binned' | 'Collected' | 'Discarded'
+  jobType: string;
+  submissionTime: string; // ISO string from backend
+  collectionSlot: string; 
+  totalCost: number;
+  isExpired?: boolean;
+  thumbnailPath?: string;
+  expiryTime?: string | Date; 
+}
+
+export interface UserProfile {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  accountBalance: number;
 }
 
 @Component({
   selector: 'app-jobs',
   templateUrl: './jobs.page.html',
   styleUrls: ['./jobs.page.scss'],
-  standalone: false,
+  standalone: false
 })
-export class JobsPage implements OnInit {
-  @ViewChild('qrCanvas') canvas!: ElementRef<HTMLCanvasElement>;
+export class JobsPage implements OnInit, OnDestroy {
+  summary: SummaryMetrics | null = null;
+  jobs: Job[] = [];
+  currentBalance: number = 0;
 
-  jobs: PrintJob[] = [];
+  activeTab: 'active' | 'history' = 'active';
+  searchQuery: string = '';
+  statusFilter: string = 'All';
+
   isLoading = true;
-  
-  isModalOpen = false;
-  selectedJob: PrintJob | null = null;
+  private apiSubs: Subscription[] = [];
 
   constructor(
     private api: ApiService,
+    private navCtrl: NavController,
     private toastCtrl: ToastController
-  ) {}
+  ) { }
 
-  ngOnInit() {
-    this.loadJobs();
-  }
+  ngOnInit() {}
 
-  // Refreshes the data when returning to this tab
   ionViewWillEnter() {
-    this.loadJobs();
+    this.loadData();
   }
 
-  loadJobs(event?: any) {
-    this.api.get<PrintJob[]>('/jobs').subscribe({
-      next: (res) => {
-        this.jobs = res;
+  ngOnDestroy() {
+    this.apiSubs.forEach(sub => sub.unsubscribe());
+  }
+
+  async loadData(event?: any) {
+    this.apiSubs.forEach(sub => sub.unsubscribe());
+    this.apiSubs = [];
+
+    const summarySub = this.api.get<SummaryMetrics>('/reports/my-summary').subscribe({
+      next: (res) => this.summary = res,
+      error: () => console.warn('Could not update summary metrics data.')
+    });
+
+    const balanceSub = this.api.get<UserProfile>('/auth/me').subscribe({
+      next: (res) => { this.currentBalance = res.accountBalance || 0; },
+      error: () => console.warn('Could not sync balance on jobs module.')
+    });
+
+    const jobsSub = this.api.get<Job[]>('/jobs').subscribe({
+      next: (res: Job[]) => {
+        this.jobs = res.map(job => {
+          if (job.document) {
+            const fileNameWithExt = job.document.split('/').pop() || '';
+            const baseName = fileNameWithExt.substring(0, fileNameWithExt.lastIndexOf('.')) || fileNameWithExt;
+            job.thumbnailPath = `uploads/thumbnails/${baseName}.jpg`;
+          } else {
+            job.thumbnailPath = undefined;
+          }
+          // job.submissionTime = new Date(job.submissionTime).toLocaleString();
+          // Compute static expiry status flag using the database configuration
+          const rawValue = (job as any).expiryTime || (job as any).expirytime || (job as any).expiry_time;
+          if (rawValue) {
+            const parsedExpiry = new Date(new Date(rawValue).getTime() + (2 * 60 * 60 * 1000));
+            job.isExpired = parsedExpiry.getTime() - new Date().getTime() <= 0;
+          }
+
+          return job;
+        });
+
         this.isLoading = false;
         if (event) event.target.complete();
       },
       error: (err) => {
         this.isLoading = false;
         if (event) event.target.complete();
-        this.showToast(err?.error?.message || 'Failed to load jobs.', 'danger');
+        this.showToast('Failed to load jobs list', 'danger');
       }
     });
+
+    this.apiSubs.push(summarySub, balanceSub, jobsSub);
   }
 
-  doRefresh(event: any) {
-    this.loadJobs(event);
-  }
-
-  openJobDetail(job: PrintJob) {
-    this.selectedJob = job;
-    this.isModalOpen = true;
-  }
-
-  closeModal() {
-    this.isModalOpen = false;
-    this.selectedJob = null;
-  }
-
-  // Triggered by the (didPresent) event on the ion-modal
-  renderQR() {
-    if (this.selectedJob && this.selectedJob.STATUS_NAME === 'Pending' && this.canvas) {
-      QRCode.toCanvas(this.canvas.nativeElement, this.selectedJob.QR_SECURE_TOKEN, {
-        width: 250,
-        margin: 2
-      }, (error) => {
-        if (error) console.error('QR Generation Error:', error);
-      });
+  // 🌟 FIX: Updated dropdown options to map directly to your DB fields
+  get availableStatuses(): string[] {
+    if (this.activeTab === 'active') {
+      return ['Pending', 'Printing', 'Binned'];
+    } else {
+      return ['Collected', 'Discarded'];
     }
   }
 
+  onTabChange() {
+    this.statusFilter = 'All';
+  }
+
+  get filteredJobs() {
+    return this.jobs.filter(job => {
+      // 🌟 FIX: Map to active statuses based on your DB rules ('Binned' means active/waiting collection)
+      const isActiveTab = ['Pending', 'Printing', 'Binned'].includes(job.statusName);
+      if (this.activeTab === 'active' && !isActiveTab) return false;
+      if (this.activeTab === 'history' && isActiveTab) return false;
+
+      const matchesSearch = (job.description || '').toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+        (job.document || '').toLowerCase().includes(this.searchQuery.toLowerCase());
+      if (!matchesSearch) return false;
+
+      if (this.statusFilter !== 'All' && job.statusName !== this.statusFilter) return false;
+
+      return true;
+    });
+  }
+
+  // 🌟 FIX: Colors explicitly set for your database status structural types
   getStatusColor(status: string): string {
     switch (status) {
-      case 'Pending': return 'warning';
-      case 'Printing': return 'primary';
-      case 'Binned': return 'success';
-      case 'Collected': return 'medium';
-      case 'Discarded': return 'danger';
+      case 'Binned': return 'success';       // Ready for collection
+      case 'Collected': return 'tertiary';   // Picked up successfully
+      case 'Printing': return 'primary';     // In progress
+      case 'Pending': return 'warning';      // Queued
+      case 'Discarded': return 'danger';     // Expired / Missed
       default: return 'medium';
     }
   }
 
-  async showToast(message: string, color: 'danger' | 'success') {
-    const toast = await this.toastCtrl.create({
-      message,
-      duration: 3000,
-      color,
-      position: 'bottom'
-    });
-    await toast.present();
+  goToProfile() { this.navCtrl.navigateForward('/tabs/profile'); }
+  goToDetail(id: number) { this.navCtrl.navigateForward(`/tabs/jobs/detail/${id}`); }
+
+  async showToast(message: string, color: string) {
+    const t = await this.toastCtrl.create({ message, color, duration: 2500 });
+    t.present();
   }
 }

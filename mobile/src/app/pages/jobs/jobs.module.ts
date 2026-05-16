@@ -6,15 +6,18 @@ import { JobsPage } from './jobs.page';
 import { ExploreContainerComponentModule } from '../../explore-container/explore-container.module';
 
 import { JobsPageRoutingModule } from './jobs-routing.module';
+import { JobDetailPage } from './job-detail.page';
+import { QrPage } from './qr.page';
 
 @NgModule({
   imports: [
     IonicModule,
     CommonModule,
     FormsModule,
+    IonicModule,
     ExploreContainerComponentModule,
     JobsPageRoutingModule
   ],
-  declarations: [JobsPage]
+  declarations: [JobsPage, JobDetailPage, QrPage]
 })
 export class JobsPageModule {}

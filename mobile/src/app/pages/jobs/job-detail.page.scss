@@ -1,0 +1,187 @@
+// Let Ionic handle dynamic dark/light mode shading natively:
+$card-bg: var(--ion-item-background, var(--ion-color-step-50));
+$card-border: var(--ion-color-step-150, var(--ion-color-step-100));
+$text-muted: var(--ion-color-step-600);
+$text-dark: var(--ion-text-color, var(--ion-color-step-900));
+
+ion-header {
+  ion-toolbar {
+    --background: var(--ion-background-color);
+    --border-color: #{$card-border};
+  }
+  ion-title {
+    font-weight: 700;
+    font-size: 16px;
+    color: $text-dark; // Forces header titles to pop in dark mode
+  }
+}
+
+/* ==========================================================================
+   Anti-Pixelation Premium Hero Canvas Component
+   ========================================================================== */
+.hero-preview-container {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  background: #111111; 
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .hero-blur-backdrop {
+    position: absolute;
+    top: -20px; left: -20px; right: -20px; bottom: -20px;
+    background-size: cover;
+    background-position: center;
+    filter: blur(20px) brightness(0.4);
+    transform: scale(1.1);
+    z-index: 1;
+  }
+
+  .hero-image {
+    position: relative;
+    z-index: 2;
+    height: 90%;
+    width: auto;
+    max-width: 80%;
+    object-fit: contain;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Positioned Status Tag Overlays */
+.floating-badge-wrapper {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  z-index: 5;
+
+  ion-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 8px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+  }
+}
+
+/* ==========================================================================
+   Detail Sheet Content & Typography Elements
+   ========================================================================== */
+.detail-body-content {
+  padding-top: 12px;
+}
+
+.binned-timer-inline {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ion-color-warning, #f5b041);
+  margin-bottom: 4px;
+  padding: 4px 2px;
+
+  ion-icon {
+    font-size: 16px;
+    margin-right: 4px;
+  }
+  .danger-text {
+    color: var(--ion-color-danger, #ef476f);
+  }
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--ion-color-step-400, #a2a4ab);
+  margin: 20px 0 8px 2px;
+}
+
+.settings-card {
+  background: $card-bg;
+  border: 1px solid $card-border;
+  border-radius: 14px;
+}
+
+/* New Description Block Layout Spec */
+.description-card {
+  padding: 16px;
+  
+  h4 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 15px;
+    color: $text-dark;
+    line-height: 1.5;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
+}
+
+/* ==========================================================================
+   Structural Settings Layouts & Metadata Fields
+   ========================================================================== */
+.info-grid {
+  padding: 2px 14px;
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    font-size: 14px;
+    border-bottom: 1px solid var(--ion-color-step-100, #f2f2f2);
+
+    &:last-child { border-bottom: none; }
+    span { color: $text-muted; }
+    b { color: $text-dark; font-weight: 600; &.uppercase { text-transform: uppercase; } }
+
+    &.total {
+      padding-top: 14px;
+      margin-top: 2px;
+      border-top: 1px dashed $card-border;
+      border-bottom: none;
+      span { font-weight: 700; color: $text-dark; }
+      .highlight { font-size: 16px; font-weight: 800; color: var(--ion-color-primary, #3880ff); }
+    }
+  }
+}
+
+.bottom-spacer { height: 32px; }
+
+.sticky-footer {
+  background: var(--ion-background-color);
+  padding: 12px 16px 24px 16px;
+  border-top: 1px solid $card-border;
+
+  ion-button {
+    --border-radius: 12px;
+    font-weight: 700;
+    font-size: 15px;
+    height: 48px;
+    margin: 4px 0;
+  }
+}
+
+.loading-container, .error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  text-align: center;
+  
+  p {
+    color: var(--ion-color-step-600, #7c7c7c);
+    font-size: 14px;
+    margin-top: 12px;
+    font-weight: 500;
+  }
+}
