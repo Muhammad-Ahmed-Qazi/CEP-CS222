@@ -1,1 +1,56 @@
-<p>profile works!</p>
+<div class="profile-container">
+  <div class="header-section">
+    <h1 class="title">Profile</h1>
+    <p class="subtitle">Your account and assignment details</p>
+  </div>
+
+  <!-- Loading Skeleton -->
+  <div class="card" *ngIf="isLoading">
+    <div class="skeleton-avatar"></div>
+    <div class="skeleton-text title-skel"></div>
+    <div class="skeleton-text sub-skel"></div>
+    <hr class="divider">
+    <div class="skeleton-row" *ngFor="let i of [1, 2]"></div>
+    <div class="skeleton-kiosk"></div>
+  </div>
+
+  <!-- Loaded Profile Data -->
+  <div class="card animate-entry" *ngIf="!isLoading && profile">
+    <div class="avatar-section">
+      <img *ngIf="profile.profilePicture" 
+           [src]="profile.profilePicture" 
+           alt="Profile Picture" 
+           class="avatar-img">
+      <div *ngIf="!profile.profilePicture" class="avatar-initials">
+        {{ getInitials() }}
+      </div>
+    </div>
+
+    <div class="user-info">
+      <h2 class="name">{{ profile.name }}</h2>
+      <p class="email">{{ profile.email }}</p>
+    </div>
+
+    <hr class="divider">
+
+    <div class="detail-list">
+      <div class="detail-row">
+        <span class="label">Employee ID</span>
+        <span class="value monospace">{{ profile.employeeId }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Member Since</span>
+        <span class="value">{{ profile.joinedAt | date:'MMM yyyy' }}</span>
+      </div>
+    </div>
+
+    <!-- Stylized Functional Kiosk ID Badge Section -->
+    <div class="kiosk-section" *ngIf="profile.kioskId">
+      <div class="kiosk-accent"></div>
+      <div class="kiosk-details">
+        <span class="kiosk-heading">Assigned Terminal</span>
+        <span class="kiosk-id-badge">#ID_{{ profile.kioskId }}</span>
+      </div>
+    </div>
+  </div>
+</div>

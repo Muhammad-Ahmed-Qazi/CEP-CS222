@@ -10,9 +10,8 @@ import { OperatorGuard } from './guards/operator-guard';
 import { Component } from '@angular/core';
 import { Handover } from './pages/operator/handover/handover';
 import { Bins } from './pages/operator/bins/bins';
+import { Profile } from './pages/operator/profile/profile';
 
-@Component({ template: '<div style="padding:24px;"><h3>Operator Account Profile Matrix</h3></div>' })
-export class ProfileStubComponent {}
 @Component({ template: '<div style="padding:24px;"><h3>Admin Systems Workspace</h3></div>' })
 export class AdminDashboardStubComponent {}
 
@@ -26,7 +25,7 @@ const routes: Routes = [
       { path: 'queue', component: Queue },
       { path: 'handover', component: Handover },
       { path: 'bins', component: Bins },
-      { path: 'profile', component: ProfileStubComponent },
+      { path: 'profile', component: Profile },
       { path: '', redirectTo: 'queue', pathMatch: 'full' }
     ]
   },

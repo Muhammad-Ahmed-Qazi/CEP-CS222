@@ -10,7 +10,7 @@ import { App } from './app';
 import { Login } from './pages/admin/login/login';
 import { OperatorShell } from './components/operator-shell/operator-shell'; // 💡 Fixed class name and path reference
 import { Queue } from './pages/operator/queue/queue';
-import { ProfileStubComponent, AdminDashboardStubComponent } from './app-routing-module';
+import { AdminDashboardStubComponent } from './app-routing-module';
 
 // Services & Guards
 import { AuthService } from './services/auth';
@@ -20,6 +20,7 @@ import { AdminGuard } from './guards/admin-guard';
 import { OperatorGuard } from './guards/operator-guard';
 import { Handover } from './pages/operator/handover/handover';
 import { Bins } from './pages/operator/bins/bins';
+import { Profile } from './pages/operator/profile/profile';
 
 @NgModule({
   declarations: [
@@ -28,7 +29,8 @@ import { Bins } from './pages/operator/bins/bins';
     OperatorShell, // 💡 Updated to match the actual generated class name
     Queue,                   // 💡 CRITICAL: Added to declarations so pipe errors and selectedJob variables evaluate cleanly
     Handover,
-    Bins
+    Bins,
+    Profile
   ],
   imports: [
     BrowserModule,
@@ -39,7 +41,6 @@ import { Bins } from './pages/operator/bins/bins';
     AppRoutingModule,
     
     // Standalone Components belong here in imports
-    ProfileStubComponent,
     AdminDashboardStubComponent
   ],
   providers: [
