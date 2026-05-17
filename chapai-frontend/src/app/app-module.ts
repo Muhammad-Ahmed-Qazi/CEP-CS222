@@ -23,6 +23,7 @@ import { Handover } from './pages/operator/handover/handover';
 import { Bins } from './pages/operator/bins/bins';
 import { Profile } from './pages/operator/profile/profile';
 import { AdminShell } from './components/admin-shell/admin-shell';
+import { Operators } from './pages/admin/operators/operators';
 
 @NgModule({
   declarations: [
@@ -35,6 +36,7 @@ import { AdminShell } from './components/admin-shell/admin-shell';
     Profile,
     AdminShell,
     AdminQueue, // 💡 CRITICAL: Added to declarations so template bindings like onRefresh and queues work without errors
+    Operators
   ],
   imports: [
     BrowserModule,

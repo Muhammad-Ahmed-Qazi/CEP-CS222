@@ -14,6 +14,7 @@ import { Profile } from './pages/operator/profile/profile';
 import { AdminShell } from './components/admin-shell/admin-shell';
 import { AdminGuard } from './guards/admin-guard';
 import { Queue as AdminQueue } from './pages/admin/queue/queue';
+import { Operators } from './pages/admin/operators/operators';
 
 @Component({ template: '<div style="padding:24px;"><h3>Admin Systems Workspace</h3></div>' })
 export class AdminDashboardStubComponent { }
@@ -39,7 +40,7 @@ const routes: Routes = [
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: AdminQueue },
-      // Other child routes...
+      { path: 'operators', component: Operators }
     ]
   },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
