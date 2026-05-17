@@ -1,128 +1,232 @@
-import { Component, OnDestroy } from '@angular/core';
-import { PrintData } from '../../../services/print-data';
-import { Job } from '../../../models/dashboard.interface';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { ActivatedRoute, Router } from '@angular/router';
+import { firstValueFrom, Subscription } from 'rxjs';
+
+export interface JobQRResponse {
+  jobId: number;
+  userFirstName: string;
+  userLastName: string;
+  userEmail: string;
+  statusName: string;
+  pageCount: number;
+  copies: number;
+  jobType: string;
+  collectionSlot: string;
+  expiryTime: string;
+  kioskId: number;
+  locationName: string;
+  binId: string;
+  isExpired: boolean;
+}
+
+export interface RecentLookup {
+  jobId: number;
+  token: string;
+  userFirstName: string;
+  userLastName: string;
+  timestamp: number;
+}
 
 @Component({
-  selector: 'app-handover',
+  selector: 'app-operator-handover',
   templateUrl: './handover.html',
   styleUrls: ['./handover.scss'],
   standalone: false
 })
-export class Handover implements OnDestroy {
-  qrToken: string = '';
+export class Handover implements OnInit, OnDestroy {
+  private readonly apiUrl = 'http://localhost:3000'; // Match your active backend port
+  
+  searchToken: string = '';
   isLoading: boolean = false;
-  
   errorMessage: string | null = null;
-  successMessage: string | null = null;
   
-  scannedJob: any = null;
+  jobResult: JobQRResponse | null = null;
+  isHandoverLoading: boolean = false;
+  handoverSuccess: boolean = false;
+  
+  recentLookups: RecentLookup[] = [];
+  
   countdownText: string = '';
-  private countdownIntervalId: any;
+  isCountdownCritical: boolean = false;
+  private timerInterval: any;
+  private routeSub: Subscription | null = null;
 
-  constructor(private printService: PrintData) {}
+  constructor(
+    private http: HttpClient,
+    private route: ActivatedRoute,
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  ngOnInit(): void {
+    this.loadRecentLookups();
+
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      if (params['token']) {
+        this.searchToken = params['token'];
+        this.lookupJob(this.searchToken);
+      }
+    });
+  }
 
   ngOnDestroy(): void {
     this.clearTimer();
+    if (this.routeSub) this.routeSub.unsubscribe();
   }
 
-  lookUpJob(): void {
-    if (!this.qrToken.trim()) return;
-
-    this.resetState();
-    this.isLoading = true;
-
-    this.printService.getJobByQr(this.qrToken.trim()).subscribe({
-      next: (job: Job) => {
-        this.isLoading = false;
-        
-        // Handle specific business logic states
-        const status = (job.statusName || '').toLowerCase();
-        
-        if (status === 'collected') {
-          this.errorMessage = 'This job has already been collected.';
-          return;
-        }
-        
-        if (status !== 'binned') {
-          this.errorMessage = `This job is not ready for collection — current status: ${job.statusName || status}`;
-          return;
-        }
-
-        this.scannedJob = job;
-        this.startCountdown();
-      },
-      error: (err) => {
-        this.isLoading = false;
-        if (err.status === 404) {
-          this.errorMessage = 'No job found with this QR token.';
-        } else {
-          this.errorMessage = err.error?.message || 'Failed to retrieve job details. Please try again.';
-        }
-      }
+  /**
+   * Helper to safely extract authentication headers from local storage cache
+   */
+  private getAuthHeaders(): HttpHeaders {
+    // Checks standard token naming conventions used by active session guards
+    const token = localStorage.getItem('access_token') || '';
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
     });
   }
 
-  executeHandover(): void {
-    if (!this.scannedJob) return;
-
+  async lookupJob(token: string) {
+    if (!token || token.trim() === '') return;
+    
+    this.resetState();
+    this.searchToken = token;
     this.isLoading = true;
-    this.printService.confirmHandover(this.scannedJob.jobId, this.scannedJob.binId).subscribe({
-      next: () => {
-        this.isLoading = false;
-        const studentName = `${this.scannedJob.userFirstName} ${this.scannedJob.userLastName}`;
-        const jobId = this.scannedJob.jobId;
-        
-        this.resetState();
-        this.successMessage = `Job #${jobId} successfully handed over to ${studentName}. Hardware bin cleared.`;
-      },
-      error: (err) => {
-        this.isLoading = false;
-        this.errorMessage = `Handover failed: ${err.error?.message || err.message}`;
-      }
-    });
+
+    try {
+      // 💡 Added explicit auth headers to bypass the 401 guard perimeter
+      const response = await firstValueFrom(
+        this.http.get<JobQRResponse>(
+          `${this.apiUrl}/operator/jobs/qr/${this.searchToken}`,
+          { headers: this.getAuthHeaders() }
+        )
+      );
+      this.jobResult = response;
+      this.addToRecentLookups(response, this.searchToken);
+      this.startCountdown();
+    } catch (error) {
+      this.handleLookupError(error);
+    } finally {
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    }
   }
 
-  cancelLookup(): void {
+  async confirmHandover() {
+    if (!this.jobResult) return;
+    
+    this.isHandoverLoading = true;
+    try {
+      // 💡 Added explicit auth headers here as well for the patch routine
+      await firstValueFrom(
+        this.http.patch(
+          `${this.apiUrl}/operator/jobs/${this.jobResult.jobId}/handover`, 
+          {}, 
+          { headers: this.getAuthHeaders() }
+        )
+      );
+      this.handoverSuccess = true;
+    } catch (error) {
+      this.errorMessage = "Failed to confirm handover. Action lifecycle rejected by server authorization.";
+    } finally {
+      this.isHandoverLoading = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  resetForm() {
+    this.searchToken = '';
     this.resetState();
   }
 
-  private resetState(): void {
+  goToQueue() {
+    this.router.navigate(['/operator/queue']);
+  }
+
+  getInitials(firstName: string, lastName: string): string {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  }
+
+  private resetState() {
+    this.jobResult = null;
     this.errorMessage = null;
-    this.successMessage = null;
-    this.scannedJob = null;
-    this.qrToken = '';
+    this.handoverSuccess = false;
     this.clearTimer();
   }
 
-  private startCountdown(): void {
-    this.clearTimer();
-    this.updateTimer(); // Initial call
-    this.countdownIntervalId = setInterval(() => this.updateTimer(), 1000);
-  }
-
-  private updateTimer(): void {
-    if (!this.scannedJob) return;
-
-    // Check if natively expired from backend or past current time
-    const expiryTime = new Date(this.scannedJob.expiryTime).getTime();
-    const now = new Date().getTime();
-    const remainingMs = expiryTime - now;
-
-    if (this.scannedJob.isExpired || remainingMs <= 0) {
-      this.scannedJob.isExpired = true;
-      this.countdownText = 'EXPIRED';
-      this.clearTimer();
+  private handleLookupError(error: any) {
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 401) {
+        this.errorMessage = "Session unauthorized. Try logging out and back into the operator panel.";
+      } else if (error.status === 404) {
+        this.errorMessage = "No job found with this QR token.";
+      } else if (error.status === 400) {
+        this.errorMessage = error.error?.message || "Job is not ready for collection.";
+      } else {
+        this.errorMessage = "Connection failed — check if backend microservices are running.";
+      }
     } else {
-      const minutes = Math.floor(remainingMs / 60000);
-      const seconds = Math.floor((remainingMs % 60000) / 1000);
-      this.countdownText = `${minutes}m ${seconds}s`;
+      this.errorMessage = "An unexpected error occurred during pipeline lookup.";
     }
   }
 
-  private clearTimer(): void {
-    if (this.countdownIntervalId) {
-      clearInterval(this.countdownIntervalId);
-      this.countdownIntervalId = null;
+  private startCountdown() {
+    this.clearTimer();
+    if (!this.jobResult || this.jobResult.isExpired) return;
+
+    const updateTimer = () => {
+      if (!this.jobResult) return;
+      const now = new Date().getTime();
+      const expiry = new Date(this.jobResult.expiryTime).getTime();
+      const diff = expiry - now;
+
+      if (diff <= 0) {
+        this.jobResult.isExpired = true;
+        this.clearTimer();
+        return;
+      }
+
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      this.countdownText = `${hours} hours ${minutes} minutes remaining`;
+      this.isCountdownCritical = (hours === 0 && minutes < 30);
+      this.cdr.detectChanges();
+    };
+
+    updateTimer();
+    this.timerInterval = setInterval(updateTimer, 60000);
+  }
+
+  private clearTimer() {
+    if (this.timerInterval) clearInterval(this.timerInterval);
+  }
+
+  private loadRecentLookups() {
+    const stored = localStorage.getItem('recent_handovers');
+    if (stored) {
+      try {
+        this.recentLookups = JSON.parse(stored);
+      } catch (e) {
+        this.recentLookups = [];
+      }
     }
+  }
+
+  private addToRecentLookups(job: JobQRResponse, token: string) {
+    const lookup: RecentLookup = {
+      jobId: job.jobId,
+      token: token,
+      userFirstName: job.userFirstName,
+      userLastName: job.userLastName,
+      timestamp: Date.now()
+    };
+
+    this.recentLookups = this.recentLookups.filter(l => l.jobId !== job.jobId);
+    this.recentLookups.unshift(lookup);
+    
+    if (this.recentLookups.length > 5) this.recentLookups.pop();
+    localStorage.setItem('recent_handovers', JSON.stringify(this.recentLookups));
   }
 }

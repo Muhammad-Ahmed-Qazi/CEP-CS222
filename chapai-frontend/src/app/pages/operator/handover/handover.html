@@ -1,87 +1,150 @@
-<div class="dashboard-layout">
-  <header class="page-header">
-    <div class="title-area">
-      <h1>Document Handover</h1>
-      <p>Scan user QR token to verify identity and release binned documents.</p>
-    </div>
-  </header>
+<div class="split-workspace-panel">
+  <!-- Left Column: Input Panel -->
+  <div class="left-input-panel">
+    <div class="input-card">
+      <div class="card-header">
+        <h2>QR Handover Verification</h2>
+        <p>Scan or enter the customer QR token to locate their print job</p>
+      </div>
 
-  <!-- Status Messages -->
-  <div *ngIf="errorMessage" class="alert error-alert">
-    {{ errorMessage }}
+      <div class="input-group">
+        <input 
+          type="text" 
+          class="large-monospace-input" 
+          placeholder="Enter QR token..."
+          [(ngModel)]="searchToken"
+          (keyup.enter)="lookupJob(searchToken)"
+          [disabled]="isLoading"
+        >
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-primary full-width" (click)="lookupJob(searchToken)" [disabled]="isLoading || !searchToken">
+          <span *ngIf="!isLoading">Look Up Job</span>
+          <div *ngIf="isLoading" class="loading-ring-spinner"></div>
+        </button>
+        <button class="btn btn-clear mt-2" *ngIf="searchToken" (click)="resetForm()">Clear</button>
+      </div>
+
+      <!-- Inline Error -->
+      <div class="inline-alert error-state" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+    </div>
+
+    <!-- Recent Lookups -->
+    <div class="recent-lookups-section" *ngIf="recentLookups.length > 0">
+      <h3>Recent Lookups</h3>
+      <div class="recent-list">
+        <div class="recent-item" *ngFor="let recent of recentLookups" (click)="lookupJob(recent.token)">
+          <div class="recent-meta">
+            <span class="recent-id">#{{ recent.jobId }}</span>
+            <span class="recent-name">{{ recent.userFirstName }} {{ recent.userLastName }}</span>
+          </div>
+          <span class="recent-time">{{ recent.timestamp | date:'shortTime' }}</span>
+        </div>
+      </div>
+    </div>
   </div>
-  <div *ngIf="successMessage" class="alert success-alert">
-    {{ successMessage }}
-  </div>
 
-  <!-- QR Input Section -->
-  <div class="grid-card search-card">
-    <div class="input-group">
-      <input 
-        type="text" 
-        class="premium-input" 
-        [(ngModel)]="qrToken" 
-        (keyup.enter)="lookUpJob()"
-        placeholder="Enter or scan QR token..." 
-        [disabled]="isLoading || scannedJob"
-        autofocus>
-      <button 
-        class="btn btn-primary" 
-        (click)="lookUpJob()" 
-        [disabled]="!qrToken || isLoading || scannedJob">
-        <span *ngIf="!isLoading">Look Up Job</span>
-        <span *ngIf="isLoading" class="spinner"></span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Job Details Result Card -->
-  <div class="grid-card result-card" *ngIf="scannedJob">
-    <div class="card-header">
-      <h2>Job #CP-{{ scannedJob.jobId }}</h2>
-      <span class="status-pill binned">Ready for Collection</span>
+  <!-- Right Column: Result Panel -->
+  <div class="right-result-panel">
+    
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!jobResult && !handoverSuccess">
+      <svg class="qr-placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+      <p>Awaiting token scan...</p>
     </div>
 
-    <div class="details-grid">
-      <!-- User Info -->
-      <div class="detail-block">
-        <label>Student Profile</label>
-        <p class="primary-text">{{ scannedJob.userFirstName }} {{ scannedJob.userLastName }}</p>
-        <p class="secondary-text">{{ scannedJob.userEmail }}</p>
+    <!-- Success State -->
+    <div class="success-state animation-slide-up" *ngIf="handoverSuccess">
+      <div class="success-icon-wrapper">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
       </div>
-
-      <!-- Print Spec -->
-      <div class="detail-block">
-        <label>Print Specifications</label>
-        <p class="primary-text">{{ scannedJob.pageCount }} Pages &times; {{ scannedJob.copies }} Copies</p>
-        <p class="secondary-text capitalize">{{ scannedJob.jobType }} Run</p>
-      </div>
-
-      <!-- Timing -->
-      <div class="detail-block">
-        <label>Time Matrix</label>
-        <p class="primary-text">{{ scannedJob.collectionSlot | date:'shortTime' }}</p>
-        <p class="secondary-text timer-badge" [class.danger]="scannedJob.isExpired">
-          {{ countdownText }}
-        </p>
-      </div>
+      <h2>Handover Complete</h2>
+      <p>Job #{{ jobResult?.jobId }} successfully handed over to {{ jobResult?.userFirstName }} {{ jobResult?.userLastName }}</p>
+      <button class="btn btn-outline mt-6" (click)="resetForm()">Process Next Job</button>
     </div>
 
-    <!-- Prominent Bin Display -->
-    <div class="bin-display">
-      <div class="kiosk-name">{{ scannedJob.locationName }}</div>
-      <div class="bin-number">Bin {{ scannedJob.binId }}</div>
-      <div *ngIf="scannedJob.isExpired" class="expired-warning">
-        Warning: This document has exceeded its holding period but can still be released.
+    <!-- Job Details Card -->
+    <div class="job-result-card animation-slide-up" *ngIf="jobResult && !handoverSuccess">
+      
+      <!-- Expired Banner -->
+      <div class="warning-banner" *ngIf="jobResult.isExpired">
+        This job has expired — collection window has passed
       </div>
-    </div>
 
-    <div class="card-actions">
-      <button class="btn btn-cancel" (click)="cancelLookup()" [disabled]="isLoading">Cancel</button>
-      <button class="btn btn-cyan" (click)="executeHandover()" [disabled]="isLoading">
-        <span *ngIf="!isLoading">Confirm Handover</span>
-        <span *ngIf="isLoading" class="spinner"></span>
-      </button>
+      <div class="card-inner-padding">
+        <!-- Header -->
+        <div class="job-header">
+          <span class="large-job-id">#{{ jobResult.jobId }}</span>
+          <span class="status-pill" [attr.data-status]="jobResult.statusName">{{ jobResult.statusName }}</span>
+        </div>
+
+        <!-- User Info -->
+        <div class="user-info-row">
+          <div class="user-avatar">{{ getInitials(jobResult.userFirstName, jobResult.userLastName) }}</div>
+          <div class="user-details">
+            <span class="user-name">{{ jobResult.userFirstName }} {{ jobResult.userLastName }}</span>
+            <span class="user-email">{{ jobResult.userEmail }}</span>
+          </div>
+        </div>
+
+        <!-- Location (Prominent) -->
+        <div class="location-prominent-box">
+          <label>Collection Location</label>
+          <div class="kiosk-name">
+            <svg class="pin-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            {{ jobResult.locationName }}
+          </div>
+          <div class="bin-display">{{ jobResult.binId }}</div>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="details-grid">
+          <div class="detail-cell">
+            <label>Print Specs</label>
+            <span class="val">{{ jobResult.jobType | titlecase }} &bull; {{ jobResult.pageCount }}pg &bull; {{ jobResult.copies }}x</span>
+          </div>
+          <div class="detail-cell">
+            <label>Total Pages</label>
+            <span class="val highlight">{{ jobResult.pageCount * jobResult.copies }}</span>
+          </div>
+          <div class="detail-cell">
+            <label>Collection Slot</label>
+            <span class="val">{{ jobResult.collectionSlot | date:'medium' }}</span>
+          </div>
+          <div class="detail-cell">
+            <label>Expiry Time</label>
+            <span class="val">{{ jobResult.expiryTime | date:'shortTime' }}</span>
+          </div>
+        </div>
+
+        <div class="timer-row" *ngIf="!jobResult.isExpired && countdownText">
+          <span class="timer-text" [class.danger-text]="isCountdownCritical">{{ countdownText }}</span>
+        </div>
+
+        <!-- Actions -->
+        <div class="action-footer mt-4">
+          <ng-container *ngIf="jobResult.statusName === 'Binned'; else notBinned">
+            <button class="btn btn-success-confirm full-width" (click)="confirmHandover()" [disabled]="isHandoverLoading">
+              <span *ngIf="!isHandoverLoading">Confirm Handover</span>
+              <div *ngIf="isHandoverLoading" class="loading-ring-spinner"></div>
+            </button>
+          </ng-container>
+
+          <ng-template #notBinned>
+            <div class="inline-alert info-state" *ngIf="jobResult.statusName !== 'Collected'">
+              This job cannot be handed over — current status: <strong>{{ jobResult.statusName }}</strong>
+            </div>
+            <div class="inline-alert success-state" *ngIf="jobResult.statusName === 'Collected'">
+              This job has already been collected.
+            </div>
+          </ng-template>
+
+          <a class="back-link mt-4" (click)="goToQueue()">Return to Queue Overview</a>
+        </div>
+      </div>
     </div>
   </div>
 </div>

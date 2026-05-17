@@ -8,8 +8,8 @@ import { OperatorGuard } from './guards/operator-guard';
 
 // Stubs for remaining operator views
 import { Component } from '@angular/core';
-@Component({ template: '<div style="padding:24px;"><h3>Handover Verification Workspace</h3></div>' })
-export class HandoverStubComponent {}
+import { Handover } from './pages/operator/handover/handover';
+
 @Component({ template: '<div style="padding:24px;"><h3>Kiosk Physical Bin Management Matrix</h3></div>' })
 export class BinsStubComponent {}
 @Component({ template: '<div style="padding:24px;"><h3>Operator Account Profile Matrix</h3></div>' })
@@ -25,7 +25,7 @@ const routes: Routes = [
     canActivate: [AuthGuard, OperatorGuard],
     children: [
       { path: 'queue', component: Queue },
-      { path: 'handover', component: HandoverStubComponent },
+      { path: 'handover', component: Handover },
       { path: 'bins', component: BinsStubComponent },
       { path: 'profile', component: ProfileStubComponent },
       { path: '', redirectTo: 'queue', pathMatch: 'full' }

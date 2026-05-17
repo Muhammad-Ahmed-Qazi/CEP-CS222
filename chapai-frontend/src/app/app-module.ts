@@ -10,7 +10,7 @@ import { App } from './app';
 import { Login } from './pages/admin/login/login';
 import { OperatorShell } from './components/operator-shell/operator-shell'; // 💡 Fixed class name and path reference
 import { Queue } from './pages/operator/queue/queue';
-import { HandoverStubComponent, BinsStubComponent, ProfileStubComponent, AdminDashboardStubComponent } from './app-routing-module';
+import { BinsStubComponent, ProfileStubComponent, AdminDashboardStubComponent } from './app-routing-module';
 
 // Services & Guards
 import { AuthService } from './services/auth';
@@ -37,7 +37,6 @@ import { Handover } from './pages/operator/handover/handover';
     AppRoutingModule,
     
     // Standalone Components belong here in imports
-    HandoverStubComponent,
     BinsStubComponent,
     ProfileStubComponent,
     AdminDashboardStubComponent
