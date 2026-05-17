@@ -1,0 +1,218 @@
+.shell-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: #0b0f19;
+  color: #f8fafc;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+.side-navigation {
+  width: 260px;
+  background-color: #0f172a;
+  border-right: 1px solid #1f2937;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+
+  .brand-block {
+    height: 64px;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-bottom: 1px solid #1f2937;
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: 0.5px;
+    }
+    .sub-label {
+      font-size: 12px;
+      color: #64748b;
+    }
+  }
+
+  .identity-card {
+    margin: 16px;
+    padding: 16px;
+    background-color: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .avatar-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.15);
+      color: #3b82f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .identity-meta {
+      overflow: hidden;
+      .user-fullname {
+        font-size: 14px;
+        font-weight: 600;
+        color: #f8fafc;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+      .kiosk-status {
+        margin-top: 4px;
+        .badge-pill {
+          font-size: 10px;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-weight: 600;
+          text-transform: uppercase;
+          
+          &.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+          }
+          &.offline {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+          }
+        }
+      }
+    }
+  }
+
+  .navigation-links {
+    padding: 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .nav-anchor {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      color: #64748b;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+
+      .nav-icon { font-size: 16px; }
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #f8fafc;
+      }
+
+      &.active-route {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+        border-left: 3px solid #3b82f6;
+        border-radius: 0 8px 8px 0;
+        padding-left: 13px;
+      }
+    }
+  }
+
+  .logout-action-button {
+    margin-top: auto;
+    margin-bottom: 16px;
+    margin-left: 16px;
+    margin-right: 16px;
+    padding: 12px;
+    background: transparent;
+    border: none;
+    color: #f87171;
+    text-align: left;
+    padding-left: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+  }
+}
+
+.workspace-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .top-status-bar {
+    height: 64px;
+    background-color: #0b0f19;
+    border-bottom: 1px solid #1f2937;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    flex-shrink: 0;
+
+    .workspace-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .status-matrix {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+
+      .clock-display {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        color: #94a3b8;
+      }
+
+      .connectivity-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #94a3b8;
+
+        .indicator-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          &.live {
+            background-color: #34d399;
+            box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+          }
+          &.dead {
+            background-color: #f87171;
+            box-shadow: 0 0 8px rgba(248, 113, 113, 0.4);
+          }
+        }
+      }
+    }
+  }
+
+  .router-canvas {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+}

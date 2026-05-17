@@ -7,15 +7,20 @@ import {
   UseGuards,
   Req,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { OperatorService } from './operator.service';
 import { OperatorGuard } from '../auth/guards/operator.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminKiosksService } from '../admin/admin-kiosks.service';
 
 @UseGuards(JwtAuthGuard, OperatorGuard)
 @Controller('operator')
 export class OperatorController {
-  constructor(private readonly operatorService: OperatorService) {}
+  constructor(
+    private readonly operatorService: OperatorService,
+    private readonly adminKiosksService: AdminKiosksService,
+  ) {}
 
   @Get('queue')
   async getQueue(@Req() req: any) {
@@ -67,5 +72,11 @@ export class OperatorController {
   @Patch('jobs/:id/discard')
   async discardJob(@Req() req: any, @Param('id', ParseIntPipe) jobId: number) {
     return this.operatorService.discardJob(req.user.userId, jobId);
+  }
+
+  @Get('available-bins')
+  async getAvailableBins(@Query('pages') pages?: string) {
+    const pagesRequired = pages ? parseInt(pages, 10) : undefined;
+    return this.adminKiosksService.getAvailableBins(pagesRequired);
   }
 }

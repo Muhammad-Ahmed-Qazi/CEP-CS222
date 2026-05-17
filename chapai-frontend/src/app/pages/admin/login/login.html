@@ -26,19 +26,22 @@
         <span>{{ errorMessage }}</span>
       </div>
 
-      <form (ngSubmit)="onLogin()" #loginForm="ngForm">
+      <!-- Aligned with Reactive [formGroup] Directive binding architecture -->
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
         <div class="input-group">
           <label for="email">Email Address</label>
           <div class="input-wrapper">
             <input 
               type="email" 
               id="email" 
-              name="email"
-              [(ngModel)]="email" 
+              formControlName="email" 
               placeholder="name@domain.com"
-              required
               autocomplete="email"
             />
+          </div>
+          <!-- Optional local client-side structural validation hinting -->
+          <div *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.invalid" class="input-validation-error">
+            Please present a structural email identity address sequence.
           </div>
         </div>
 
@@ -48,15 +51,16 @@
             <input 
               type="password" 
               id="password" 
-              name="password"
-              [(ngModel)]="password" 
+              formControlName="password" 
               placeholder="••••••••"
-              required
             />
+          </div>
+          <div *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid" class="input-validation-error">
+            Password strings demand a minimum length constraints boundary of 6 characters.
           </div>
         </div>
 
-        <button type="submit" class="submit-btn" [disabled]="isLoading">
+        <button type="submit" class="submit-btn" [disabled]="loginForm.invalid || isLoading">
           <span *ngIf="!isLoading">Authenticate Gateway</span>
           <span *ngIf="isLoading" class="loader"></span>
         </button>

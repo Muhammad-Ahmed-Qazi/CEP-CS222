@@ -63,7 +63,7 @@ export class JobsService {
     private readonly db: DbService,
     private readonly notificationsService: NotificationsService,
     private readonly loggingService: LoggingService,
-  ) {}
+  ) { }
 
   /**
    * Internal helper to map Oracle UPPER_CASE keys to camelCase
@@ -79,35 +79,6 @@ export class JobsService {
     });
     return mapped;
   }
-
-  // @Cron(CronExpression.EVERY_10_SECONDS)
-  // async handleAutoDiscardJobs() {
-  //   this.logger.log('Executing automated background sweep for expired uncollected jobs...');
-
-  //   // 🌟 ORACLE FIXED QUERY: Swap '?' with ':now'
-  //   const query = `
-  //   UPDATE HAS_STATUS hs
-  //     SET hs.status_id = (SELECT s.status_id FROM JOB_STATUS s WHERE s.status_name = 'Discarded')
-  //     WHERE hs.status_id = (SELECT s.status_id FROM JOB_STATUS s WHERE s.status_name = 'Binned')
-  //     AND hs.job_id IN (
-  //     SELECT pj.job_id
-  //     FROM PRINT_JOB pj
-  //     WHERE pj.expiry_time <= SYSTIMESTAMP)
-  // `;
-
-  //   try {
-  //     // If your custom DbService execute function handles standard arrays:
-  //     const conn = await this.db.getConnection();
-  //     const result = await conn.execute(query);
-
-  //     // NOTE: If the array approach still complains, Oracle might be expecting an object map like this:
-  //     // const result = await this.db.execute(query, { now });
-
-  //     this.logger.log('Automated background sweep completed successfully.');
-  //   } catch (error) {
-  //     this.logger.error('Failed to execute background status sweep:', error);
-  //   }
-  // }
 
   async submitJob(
     userId: number,
@@ -218,13 +189,18 @@ export class JobsService {
   }
 
   /**
-   * Task 1: Use V_JOB_DETAILS view
+   * Task 1: Use V_JOB_DETAILS view joined with base tables to cover view limits
    */
   async findAll(userId: number) {
     const conn = await this.db.getConnection();
     try {
       const result = await conn.execute(
-        `SELECT * FROM V_JOB_DETAILS WHERE User_ID = :userId ORDER BY Submission_Time DESC`,
+        `SELECT v.*, pj.SUBMISSION_TIME, pj.DOCUMENT, pj.DESCRIPTION, pj.PRINT_MODE, pj.PRINT_SIDE, pj.TOTAL_COST
+         FROM V_JOB_DETAILS v
+         JOIN PRINT_JOB pj ON v.JOB_ID = pj.JOB_ID
+         JOIN SUBMITS s ON pj.JOB_ID = s.JOB_ID
+         WHERE s.USER_ID = :userId 
+         ORDER BY pj.SUBMISSION_TIME DESC`,
         { userId },
         { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
@@ -237,13 +213,17 @@ export class JobsService {
   }
 
   /**
-   * Task 1: Use V_JOB_DETAILS view for single job
+   * Task 1: Use V_JOB_DETAILS view + base tables for single job retrieval
    */
   async findOne(jobId: number, userId: number) {
     const conn = await this.db.getConnection();
     try {
       const result = await conn.execute(
-        `SELECT * FROM V_JOB_DETAILS WHERE Job_Id = :jobId AND User_ID = :userId`,
+        `SELECT v.*, pj.SUBMISSION_TIME, pj.DOCUMENT, pj.DESCRIPTION, pj.PRINT_MODE, pj.PRINT_SIDE, pj.TOTAL_COST
+         FROM V_JOB_DETAILS v
+         JOIN PRINT_JOB pj ON v.JOB_ID = pj.JOB_ID
+         JOIN SUBMITS s ON pj.JOB_ID = s.JOB_ID
+         WHERE v.JOB_ID = :jobId AND s.USER_ID = :userId`,
         { jobId, userId },
         { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
@@ -283,10 +263,13 @@ export class JobsService {
         );
       }
 
-      // 2. Verify ownership, cost, and state with a row lock to prevent race conditions
+      // 2. Verify ownership, cost, and state via explicit relation lookup safely
       const jobRes = await conn.execute<JobLockRow>(
-        `SELECT Status_Name, total_cost FROM V_JOB_DETAILS 
-         WHERE Job_Id = :jobId AND User_ID = :userId FOR UPDATE`,
+        `SELECT v.STATUS_NAME, pj.TOTAL_COST 
+         FROM V_JOB_DETAILS v
+         JOIN PRINT_JOB pj ON v.JOB_ID = pj.JOB_ID
+         JOIN SUBMITS s ON pj.JOB_ID = s.JOB_ID
+         WHERE v.JOB_ID = :jobId AND s.USER_ID = :userId FOR UPDATE`,
         { jobId, userId },
         { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
@@ -385,9 +368,13 @@ export class JobsService {
   ) {
     const conn = await this.db.getConnection();
     try {
-      // 1. Fetch original job details
+      // 1. Fetch original job details joining missing attributes safely
       const jobRes = await conn.execute(
-        `SELECT * FROM V_JOB_DETAILS WHERE Job_Id = :jobId AND User_ID = :userId`,
+        `SELECT v.*, pj.DOCUMENT, pj.PRINT_MODE, pj.PRINT_SIDE
+         FROM V_JOB_DETAILS v
+         JOIN PRINT_JOB pj ON v.JOB_ID = pj.JOB_ID
+         JOIN SUBMITS s ON pj.JOB_ID = s.JOB_ID
+         WHERE v.JOB_ID = :jobId AND s.USER_ID = :userId`,
         { jobId: originalJobId, userId },
         { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
@@ -502,7 +489,10 @@ export class JobsService {
     const conn = await this.db.getConnection();
     try {
       const jobRes = await conn.execute(
-        `SELECT Status_Name, User_ID, expiry_time FROM V_JOB_DETAILS WHERE Job_Id = :jobId FOR UPDATE`,
+        `SELECT v.STATUS_NAME, v.EXPIRY_TIME, s.USER_ID 
+         FROM V_JOB_DETAILS v
+         JOIN SUBMITS s ON v.JOB_ID = s.JOB_ID 
+         WHERE v.JOB_ID = :jobId FOR UPDATE`,
         { jobId },
         { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
@@ -537,7 +527,7 @@ export class JobsService {
         );
       }
 
-      // Execute Update
+      // Execute Update (Stray brace removed)
       await conn.execute(
         `UPDATE HAS_STATUS 
         SET Status_ID = (SELECT Status_ID FROM JOB_STATUS WHERE Status_Name = :newStatus) 
@@ -555,13 +545,13 @@ export class JobsService {
       // Commit changes safely to the database
       await conn.commit();
 
-      // 👈 Audit log state modification after successful commit
+      // Audit log state modification after successful commit
       await this.loggingService.logAction(
         operatorId,
         'STATUS_UPDATE',
         'PRINT_JOB',
-        String(jobId), // Explicitly cast to string for schema layout safety
-        currentStatus, // Captured before execution
+        String(jobId),
+        currentStatus,
         newStatus,
       );
 
@@ -640,36 +630,42 @@ export class JobsService {
   async getJobs(userId: number, filters: JobFilters) {
     const conn = await this.db.getConnection();
     try {
-      let query = `SELECT * FROM V_JOB_DETAILS WHERE User_ID = :userId`;
+      // Joining view data directly back against PRINT_JOB and SUBMITS tables to overcome view compilation gaps
+      let query = `
+        SELECT v.*, pj.SUBMISSION_TIME, pj.DOCUMENT, pj.DESCRIPTION, pj.PRINT_MODE, pj.PRINT_SIDE, pj.TOTAL_COST
+        FROM V_JOB_DETAILS v
+        JOIN PRINT_JOB pj ON v.JOB_ID = pj.JOB_ID
+        JOIN SUBMITS s ON pj.JOB_ID = s.JOB_ID
+        WHERE s.USER_ID = :userId
+      `;
       const binds: Record<string, string | number> = { userId };
 
       if (filters.status) {
-        query += ` AND Status_Name = :status`;
+        query += ` AND v.STATUS_NAME = :status`;
         binds.status = filters.status;
       }
 
       if (filters.jobType) {
-        query += ` AND Job_Type = :jobType`;
+        query += ` AND v.JOB_TYPE = :jobType`;
         binds.jobType = filters.jobType;
       }
 
       if (filters.from) {
-        query += ` AND Submission_time >= TO_DATE(:fromDate, 'YYYY-MM-DD')`;
+        query += ` AND pj.SUBMISSION_TIME >= TO_DATE(:fromDate, 'YYYY-MM-DD')`;
         binds.fromDate = filters.from;
       }
 
       if (filters.to) {
-        // Add time to include the entire end day
-        query += ` AND Submission_time <= TO_DATE(:toDate || ' 23:59:59', 'YYYY-MM-DD HH24:MI:SS')`;
+        query += ` AND pj.SUBMISSION_TIME <= TO_TIMESTAMP(:toDate || ' 23:59:59', 'YYYY-MM-DD HH24:MI:SS')`;
         binds.toDate = filters.to;
       }
 
       if (filters.search) {
-        query += ` AND (LOWER(Description) LIKE LOWER('%' || :search || '%') OR LOWER(Document) LIKE LOWER('%' || :search || '%'))`;
+        query += ` AND (LOWER(pj.DESCRIPTION) LIKE LOWER('%' || :search || '%') OR LOWER(pj.DOCUMENT) LIKE LOWER('%' || :search || '%'))`;
         binds.search = filters.search;
       }
 
-      query += ` ORDER BY Submission_time DESC`;
+      query += ` ORDER BY pj.SUBMISSION_TIME DESC`;
 
       const result = await conn.execute<Record<string, unknown>>(query, binds, {
         outFormat: oracledb.OUT_FORMAT_OBJECT,
@@ -697,17 +693,19 @@ export class JobsService {
     try {
       const query = `
         SELECT 
-          v.Job_ID, v.Submission_time, v.Completion_time, v.Document, v.Description,
-          v.Job_Type, v.Print_Mode, v.Print_Side, v.Copies, v.Page_count,
+          v.Job_ID, pj.Submission_time, pj.Completion_time, pj.Document, pj.Description,
+          v.Job_Type, pj.Print_Mode, pj.Print_Side, v.Copies, v.Page_count,
           (v.Page_count * v.Copies) AS Total_Pages,
-          v.Price_Per_Page, v.Total_Cost, v.Collection_Slot, v.Status_Name,
+          pj.Price_Per_Page, pj.Total_Cost, v.Collection_Slot, v.Status_Name,
           u.First_Name, u.Last_Name, u.Email,
           ft.Transaction_ID, ft.Transaction_Date, ft.Balance_After
         FROM V_JOB_DETAILS v
-        JOIN APP_USER u ON v.User_ID = u.User_ID
+        JOIN PRINT_JOB pj ON v.JOB_ID = pj.JOB_ID
+        JOIN SUBMITS s ON v.JOB_ID = s.JOB_ID
+        JOIN APP_USER u ON s.User_ID = u.User_ID
         JOIN GENERATES g ON v.Job_ID = g.Job_ID
         JOIN FINANCIAL_TRANSACTION ft ON g.Transaction_ID = ft.Transaction_ID
-        WHERE v.Job_ID = :jobId AND v.User_ID = :userId AND ft.Transaction_Type = 'deduction'
+        WHERE v.Job_ID = :jobId AND s.User_ID = :userId AND ft.Transaction_Type = 'deduction'
       `;
 
       const result = await conn.execute<Record<string, unknown>>(

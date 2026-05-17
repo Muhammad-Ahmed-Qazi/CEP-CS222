@@ -1,0 +1,55 @@
+<div class="shell-container">
+  <aside class="side-navigation">
+    <div class="brand-block">
+      <span class="logo-text">Chapai</span>
+      <span class="sub-label">Operator Panel</span>
+    </div>
+
+    <div class="identity-card" *ngIf="profile">
+      <div class="avatar-circle">{{ avatarInitials }}</div>
+      <div class="identity-meta">
+        <div class="user-fullname">{{ profile.firstName }} {{ profile.lastName }}</div>
+        <div class="kiosk-status">
+          <span *ngIf="profile.kioskId" class="badge-pill active">{{ profile.locationName }}</span>
+          <span *ngIf="!profile.kioskId" class="badge-pill offline">No Kiosk</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="navigation-links">
+      <a routerLink="/operator/queue" routerLinkActive="active-route" class="nav-anchor">
+        <span class="nav-icon">📁</span> Queue Monitor
+      </a>
+      <a routerLink="/operator/handover" routerLinkActive="active-route" class="nav-anchor">
+        <span class="nav-icon">🔍</span> Handover Verification
+      </a>
+      <a routerLink="/operator/bins" routerLinkActive="active-route" class="nav-anchor">
+        <span class="nav-icon">📦</span> My Bins
+      </a>
+      <a routerLink="/operator/profile" routerLinkActive="active-route" class="nav-anchor">
+        <span class="nav-icon">👤</span> My Profile
+      </a>
+    </nav>
+
+    <button class="logout-action-button" (click)="onLogout()">
+      <span class="action-icon">🚪</span> Sign Out Station
+    </button>
+  </aside>
+
+  <div class="workspace-main">
+    <header class="top-status-bar">
+      <h2 class="workspace-title">{{ pageTitle }}</h2>
+      <div class="status-matrix">
+        <div class="clock-display">{{ currentTime }}</div>
+        <div class="connectivity-wrapper">
+          <span class="indicator-dot live" [class.dead]="!profile?.kioskId"></span>
+          <span class="indicator-text">{{ profile?.kioskId ? 'Kiosk Connected' : 'Station Inactive' }}</span>
+        </div>
+      </div>
+    </header>
+    
+    <div class="router-canvas">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

@@ -26,7 +26,7 @@ export class OperatorService {
     private readonly db: DbService,
     private readonly notifications: NotificationsService,
     private readonly loggingService: LoggingService,
-  ) {}
+  ) { }
 
   private async getAssignedKiosk(
     conn: oracledb.Connection,
@@ -57,25 +57,32 @@ export class OperatorService {
     }
   }
 
-  // --- GET: Operator Queue ---
+  // --- GET: Operator Queue (FIXED SCHEMA ISOLATION) ---
   async getQueue(userId: number) {
     const conn = await this.db.getConnection();
     try {
       const kioskId = await this.getAssignedKiosk(conn, userId);
+      if (!kioskId) {
+        throw new BadRequestException(
+          'Operator account contains no verified active kiosk machine node routing assignment.',
+        );
+      }
+
+      // Capture assigned binned items OR completely unassigned pending/printing jobs
       const query = `
-        SELECT * FROM V_JOB_DETAILS 
-        WHERE Status_Name IN ('Pending', 'Printing')
-        ORDER BY Priority_level DESC, Collection_slot ASC
-      `;
+      SELECT * FROM V_JOB_DETAILS 
+      WHERE (Status_Name IN ('Pending', 'Printing') AND Kiosk_ID IS NULL)
+         OR (Kiosk_ID = :kioskId AND Status_Name IN ('Printing', 'Binned'))
+      ORDER BY Priority_level DESC, Collection_slot ASC
+    `;
+
       const result = await conn.execute(
         query,
-        {},
-        {
-          outFormat: oracledb.OUT_FORMAT_OBJECT,
-        },
+        { kioskId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
 
-      return (result.rows as Record<string, unknown>[]).map((row) => {
+      return (result.rows as any[]).map((row: any) => {
         const obj: any = {};
         for (const key in row) {
           const camelKey = key
@@ -90,7 +97,7 @@ export class OperatorService {
     }
   }
 
-  // --- GET: Kiosk Bins (Updated with used_pages) ---
+  // --- GET: Kiosk Bins ---
   async getBins(userId: number) {
     const conn = await this.db.getConnection();
     try {
@@ -106,15 +113,17 @@ export class OperatorService {
         { outFormat: oracledb.OUT_FORMAT_OBJECT },
       );
 
-      return (result.rows as Record<string, unknown>[]).map((row) => ({
-        kioskId: row.KIOSK_ID as number,
-        binId: row.BIN_ID as string,
-        maxPageCapacity: row.MAX_PAGE_CAPACITY as number,
-        usedPages: row.USED_PAGES as number,
-        remainingCapacity:
-          (row.MAX_PAGE_CAPACITY as number) - (row.USED_PAGES as number),
-        binStatus: row.BIN_STATUS as string,
-      }));
+      return (result.rows as Record<string, unknown>[] | any).map(
+        (row: any) => ({
+          kioskId: row.KIOSK_ID as number,
+          binId: row.BIN_ID as string,
+          maxPageCapacity: row.MAX_PAGE_CAPACITY as number,
+          usedPages: row.USED_PAGES as number,
+          remainingCapacity:
+            (row.MAX_PAGE_CAPACITY as number) - (row.USED_PAGES as number),
+          binStatus: row.BIN_STATUS as string,
+        }),
+      );
     } finally {
       await conn.close();
     }
@@ -200,7 +209,7 @@ export class OperatorService {
         jobId,
         effectivePages,
       };
-    } catch (e) {
+    } catch (e: any) {
       await conn.rollback();
       throw e instanceof BadRequestException || e instanceof NotFoundException
         ? e
@@ -266,7 +275,7 @@ export class OperatorService {
         jobId,
         releasedPages: effectivePages,
       };
-    } catch (e) {
+    } catch (e: any) {
       await conn.rollback();
       throw e instanceof BadRequestException || e instanceof NotFoundException
         ? e
@@ -276,7 +285,7 @@ export class OperatorService {
     }
   }
 
-  // --- TASK 2: Discard Job (Release Capacity) ---
+  // --- TASK 3: Discard Job (Release Capacity) ---
   async discardJob(userId: number, jobId: number) {
     const conn = await this.db.getConnection();
     try {
@@ -345,7 +354,7 @@ export class OperatorService {
       }
 
       return { message: 'Job discarded', jobId, releasedPages: effectivePages };
-    } catch (e) {
+    } catch (e: any) {
       await conn.rollback();
       throw e instanceof BadRequestException || e instanceof NotFoundException
         ? e

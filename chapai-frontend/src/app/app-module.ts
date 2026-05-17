@@ -1,41 +1,54 @@
-import { NgModule, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { AppRoutingModule } from './app-routing-module';
+
+// Components
 import { App } from './app';
-import { Navbar } from './components/navbar/navbar';
-import { Sidebar } from './components/sidebar/sidebar';
 import { Login } from './pages/admin/login/login';
-import { Handover } from './pages/admin/handover/handover';
-import { Users } from './pages/admin/users/users';
-import { Operators } from './pages/admin/operators/operators';
-import { Queue as OperatorQueue } from './pages/operator/queue/queue';
-import { Kiosks } from './pages/admin/kiosks/kiosks';
-import { Reports } from './pages/admin/reports/reports';
-import { AuditLogs } from './pages/admin/audit-logs/audit-logs';
-import { Bins } from './pages/operator/bins/bins';
-import { Profile } from './pages/operator/profile/profile';
-import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { OperatorShell } from './components/operator-shell/operator-shell'; // 💡 Fixed class name and path reference
+import { Queue } from './pages/operator/queue/queue';
+import { HandoverStubComponent, BinsStubComponent, ProfileStubComponent, AdminDashboardStubComponent } from './app-routing-module';
+
+// Services & Guards
+import { AuthService } from './services/auth';
+import { PrintData } from './services/print-data';
+import { AuthGuard } from './guards/auth-guard';
+import { AdminGuard } from './guards/admin-guard';
+import { OperatorGuard } from './guards/operator-guard';
+import { Handover } from './pages/operator/handover/handover';
 
 @NgModule({
   declarations: [
     App,
-    Navbar,
-    Sidebar,
-    Login,
-    Handover,
-    Users,
-    Operators,
-    OperatorQueue,
-    Kiosks,
-    Reports,
-    AuditLogs,
-    Bins,
-    Profile,
+    Login,                  // 💡 CRITICAL: Added to declarations so template bindings like onLogin, email, and password work
+    OperatorShell, // 💡 Updated to match the actual generated class name
+    Queue,                   // 💡 CRITICAL: Added to declarations so pipe errors and selectedJob variables evaluate cleanly
+    Handover
   ],
-  imports: [BrowserModule, AppRoutingModule, FormsModule, HttpClientModule],
-  providers: [provideBrowserGlobalErrorListeners()],
-  bootstrap: [App],
+  imports: [
+    BrowserModule,
+    HttpClientModule,
+    FormsModule,
+    CommonModule,
+    ReactiveFormsModule,
+    AppRoutingModule,
+    
+    // Standalone Components belong here in imports
+    HandoverStubComponent,
+    BinsStubComponent,
+    ProfileStubComponent,
+    AdminDashboardStubComponent
+  ],
+  providers: [
+    AuthService,
+    PrintData,
+    AuthGuard,
+    AdminGuard,
+    OperatorGuard
+  ],
+  bootstrap: [App]
 })
-export class AppModule {}
+export class AppModule { }

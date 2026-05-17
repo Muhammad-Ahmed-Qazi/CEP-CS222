@@ -1,69 +1,63 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.html',
-  styleUrl: './login.scss',
-  standalone: false,
+  styleUrls: ['./login.scss'],
+  standalone: false
 })
-export class Login {
-  email = '';
-  password = '';
-  errorMessage = '';
-  isLoading = false;
+export class Login implements OnInit {
+  loginForm!: FormGroup;
+  isLoading: boolean = false;
+  errorMessage: string | null = null;
 
   constructor(
-    private router: Router,
-    private auth: AuthService
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router
   ) {}
 
-  onLogin() {
-    // Basic structural validation guard
-    if (!this.email || !this.password) {
-      this.errorMessage = 'Please populate all credential parameters.';
-      return;
+  ngOnInit(): void {
+    if (this.authService.isLoggedIn()) {
+      this.routeUserByRole(this.authService.getRole() || '');
     }
+    
+    this.loginForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]]
+    });
+  }
+
+  onSubmit(): void {
+    if (this.loginForm.invalid || this.isLoading) return;
 
     this.isLoading = true;
-    this.errorMessage = '';
+    this.errorMessage = null;
+    const { email, password } = this.loginForm.value;
 
-    // Step 1: Request bearer authentication token from NestJS
-    this.auth.login(this.email, this.password).subscribe({
+    this.authService.login(email, password).subscribe({
       next: () => {
-        
-        // Step 2: Extract verified relational operational role context
-        this.auth.getMe().subscribe({
-          next: (user) => {
-            this.isLoading = false;
-            
-            // Step 3: Branch routing clearance parameters
-            if (user.role === 'admin') {
-              this.router.navigate(['/admin/queue']);
-            } else if (user.role === 'operator') {
-              this.router.navigate(['/operator/queue']);
-            } else {
-              this.errorMessage = 'Unauthorized Scope: Role profile is invalid.';
-            }
-          },
-          error: (err) => {
-            this.isLoading = false;
-            this.errorMessage = 'Identity Verification Failed: Profile unreachable.';
-            console.error('Profile identification error:', err);
-          }
-        });
-
+        this.isLoading = false;
+        this.routeUserByRole(this.authService.getRole() || '');
       },
       error: (err) => {
         this.isLoading = false;
-        if (err.status === 401) {
-          this.errorMessage = 'Invalid email or password combination.';
-        } else {
-          this.errorMessage = 'Network Gateway Timeout: Unable to reach backend.';
-        }
-        console.error('Authentication stream error:', err);
+        this.errorMessage = err.error?.message || 'Invalid identification coordinates or network failure.';
       }
     });
+  }
+
+  private routeUserByRole(role: string): void {
+    if (role === 'admin') {
+      this.router.navigate(['/admin/dashboard']);
+    } else if (role === 'operator') {
+      this.router.navigate(['/operator/queue']);
+    } else {
+      this.errorMessage = 'Unauthorized: insufficient access privileges';
+      this.authService.logout();
+    }
   }
 }

@@ -1,110 +1,234 @@
-<div class="dashboard-layout">
-    <header class="queue-header">
-        <div class="title-area">
-            <h1>Active Operations Queue</h1>
-            <p>Real-time campus pipeline monitoring engine. Hardwired straight to system database cores.</p>
-        </div>
-
-        <!-- Job Type Segment Tab Selectors -->
-        <div class="type-segmented-control">
-            <button [class.active]="selectedJobType === 'Normal'" (click)="changeJobTypeFilter('Normal')">Normal
-                Runs</button>
-            <button [class.active]="selectedJobType === 'Bulk'" (click)="changeJobTypeFilter('Bulk')">Bulk
-                Processing</button>
-        </div>
+<div class="split-workspace-panel">
+  
+  <!-- Left Side Feed Module Area (38%) -->
+  <section class="left-queue-feed">
+    <header class="feed-header">
+      <div class="header-main-title">
+        <h3>System Print Queue</h3>
+        <span class="refresh-telemetry">Synced: {{ lastUpdatedTime }}</span>
+      </div>
+      <button class="manual-sync-btn" (click)="refreshQueue(true)" [disabled]="isLoadingQueue">🔄</button>
     </header>
 
-    <!-- Operational Pipeline Status Horizon Filtering row -->
-    <nav class="status-filters">
-        <button *ngFor="let stat of ['All', 'Pending', 'Printing', 'Binned', 'Discarded', 'Collected']"
-            [class.active]="selectedStatus === stat" (click)="changeStatusFilter(stat)">
-            {{ stat }}
-        </button>
+    <!-- Interactive Sub-Filters Tabs -->
+    <nav class="filter-tabs-strip">
+      <button *ngFor="let tab of ['All', 'Pending', 'Printing', 'Binned']" 
+              [class.active-tab]="activeTab === tab"
+              (click)="applyFilter(tab)">
+        {{ tab }}
+      </button>
     </nav>
 
-    <!-- Principal Data Grid Infrastructure -->
-    <div class="grid-card">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Job ID</th>
-                    <th>User Context</th>
-                    <th>Page Matrix</th>
-                    <th>Collection Target Slot</th>
-                    <th>Pipeline Status</th>
-                    <th>Holding Expiry Countdown</th>
-                    <th>System Operational Directives</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let job of filteredJobs">
-                    <td class="bold-id">#CP-{{ job.id }}</td>
-                    <td>
-                        <div class="user-cell">
-                            <span class="user-name">{{ job.userName || 'Anonymous User' }}</span>
-                            <span class="user-email">{{ job.userEmail }}</span>
-                        </div>
-                    </td>
-                    <td><span class="page-badge">{{ job.pages }} Pages</span></td>
-                    <td class="slot-text">{{ job.collectionSlot | date:'shortTime' }}</td>
-                    <td>
-                        <span class="status-pill" [attr.data-status]="job.status">
-                            {{ job.status }}
-                        </span>
-                    </td>
-                    <!-- Expiring countdown dynamic clock cell -->
-                    <td class="countdown-cell">
-                        <span *ngIf="job.status === 'Binned'" class="timer-badge"
-                            [class.danger]="job.displayCountdown === 'EXPIRED'">
-                            {{ job.displayCountdown || 'Calculating...' }}
-                        </span>
-                        <span *ngIf="job.status !== 'Binned'" class="muted-dash">—</span>
-                    </td>
-                    <td>
-                        <div class="action-cell-group">
-                            <button *ngIf="job.status === 'Pending'" class="btn btn-print"
-                                (click)="handleStatusTransition(job, 'Printing')">Start Print</button>
-                            <button *ngIf="job.status === 'Printing'" class="btn btn-bin"
-                                (click)="handleStatusTransition(job, 'Binned')">Bin Allocation</button>
-                            <button *ngIf="job.status === 'Binned'" class="btn btn-discard"
-                                (click)="handleStatusTransition(job, 'Discarded')">Discard Run</button>
-                            <button *ngIf="job.status === 'Pending'" class="btn btn-discard"
-                                (click)="handleStatusTransition(job, 'Discarded')">Discard Run</button>
-                            <span *ngIf="['Collected', 'Discarded'].includes(job.status)" class="archive-lock">Terminal
-                                State Locked</span>
-                        </div>
-                    </td>
-                </tr>
-                <tr *ngIf="filteredJobs.length === 0">
-                    <td colspan="7" class="empty-state">No active queue rows detected matching current parameter
-                        constraints.</td>
-                </tr>
-            </tbody>
-        </table>
+    <!-- Error Messaging Hook -->
+    <div *ngIf="inlineErrorMessage" class="inline-alert warning-state">
+      {{ inlineErrorMessage }}
     </div>
+
+    <!-- Main List Scroll Area View -->
+    <div class="scrollable-rows-frame">
+      <!-- Skeleton State Matrix -->
+      <div *ngIf="isLoadingQueue">
+        <div class="skeleton-card-row animated-shimmer" *ngFor="let item of [1,2,3,4,5]"></div>
+      </div>
+
+      <!-- Zero Result Content Placeholder -->
+      <div class="empty-feed" *ngIf="!isLoadingQueue && filteredJobs.length === 0">
+        No active tracking items match the selection parameters.
+      </div>
+
+      <!-- Functional Populated Rows -->
+      <div *ngIf="!isLoadingQueue">
+        <div class="job-card-item" 
+             *ngFor="let job of filteredJobs"
+             [class.selected-state]="selectedJob?.jobId === job.jobId"
+             [style.border-left-color]="job.priorityLevel > 1 ? '#a855f7' : '#374151'"
+             (click)="selectJob(job)">
+          
+          <div class="card-meta-row">
+            <span class="monospace-id">#CP-{{ job.jobId }}</span>
+            <span class="pill-badge" [attr.data-status]="job.statusName">{{ job.statusName }}</span>
+          </div>
+
+          <div class="card-identity-row">
+            <span class="type-pill" [class.bulk]="job.jobType === 'bulk'">{{ job.jobType }}</span>
+          </div>
+
+          <div class="card-base-row">
+            <span class="meta-metrics">{{ job.pageCount }} pgs &times; {{ job.copies }} cpy</span>
+            
+            <!-- Realtime Timer Display Context -->
+            <span class="realtime-countdown" 
+                  *ngIf="job.statusName === 'Binned'"
+                  [class.critical-danger]="job.isNearExpiry">
+              ⏱️ {{ job.displayCountdown || 'Validating...' }}
+            </span>
+            <span class="time-stamp" *ngIf="job.statusName !== 'Binned'">
+              {{ job.collectionSlot | date:'dd MMM, HH:mm' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right Detailed Telemetry Console Workspace Panel (62%) -->
+  <section class="right-detail-console">
+    <!-- Screen Overlay Spinner Loader Module -->
+    <div class="spinner-overlay" *ngIf="isActionLoading">
+      <div class="loading-ring-spinner"></div>
+    </div>
+
+    <!-- Empty Interaction Placeholder Window -->
+    <div class="unselected-state" *ngIf="!selectedJob">
+      <div class="central-prompt-graphic">📋</div>
+      <p>Select a job file row from the queue monitor feed to inspect system records and manage pipeline states.</p>
+    </div>
+
+    <!-- Core Focused Inspection Element Worksite -->
+    <div class="inspection-viewport" *ngIf="selectedJob">
+      <header class="inspection-header">
+        <div class="title-meta">
+          <h2>#CP-{{ selectedJob.jobId }}</h2>
+          <span class="pill-badge large" [attr.data-status]="selectedJob.statusName">{{ selectedJob.statusName }}</span>
+        </div>
+      </header>
+
+      <!-- Horizontal Multi-State Timeline Progress Map -->
+      <div class="horizontal-state-timeline-bar">
+        <div class="timeline-node" [class.passed]="['Pending','Printing','Binned','Collected'].includes(selectedJob.statusName)">
+          <div class="marker" [class.pulse]="selectedJob.statusName === 'Pending'"></div>
+          <span class="node-label">Pending</span>
+        </div>
+        <div class="timeline-connector-line" [class.passed]="['Printing','Binned','Collected'].includes(selectedJob.statusName)"></div>
+        
+        <div class="timeline-node" [class.passed]="['Printing','Binned','Collected'].includes(selectedJob.statusName)">
+          <div class="marker" [class.pulse]="selectedJob.statusName === 'Printing'"></div>
+          <span class="node-label">Printing</span>
+        </div>
+        <div class="timeline-connector-line" [class.passed]="['Binned','Collected'].includes(selectedJob.statusName)"></div>
+        
+        <div class="timeline-node" [class.passed]="['Binned','Collected'].includes(selectedJob.statusName)">
+          <div class="marker" [class.pulse]="selectedJob.statusName === 'Binned'"></div>
+          <span class="node-label">Binned</span>
+        </div>
+        <div class="timeline-connector-line" [class.passed]="selectedJob.statusName === 'Collected'"></div>
+        
+        <div class="timeline-node" [class.passed]="selectedJob.statusName === 'Collected'">
+          <div class="marker"></div>
+          <span class="node-label">Collected</span>
+        </div>
+      </div>
+
+      <!-- Structured Grid Specifications Dashboard Layout Panel Matrix -->
+      <div class="telemetry-specifications-grid">
+        <div class="spec-cell">
+          <label>Print Run Type</label>
+          <div class="spec-value capitalize">{{ selectedJob.jobType }}</div>
+        </div>
+        <div class="spec-cell">
+          <label>Duplex Configuration</label>
+          <div class="spec-value">{{ selectedJob.printSide }}</div>
+        </div>
+        <div class="spec-cell">
+          <label>Target Copies</label>
+          <div class="spec-value">{{ selectedJob.copies }} Units</div>
+        </div>
+        <div class="spec-cell">
+          <label>Document Page Scale</label>
+          <div class="spec-value">{{ selectedJob.pageCount }} Pages</div>
+        </div>
+        <div class="spec-cell">
+          <label>Total Throughput volume</label>
+          <div class="spec-value">{{ selectedJob.pageCount * selectedJob.copies }} Impressions</div>
+        </div>
+        <div class="spec-cell">
+          <label>System Calculated Invoice</label>
+          <div class="spec-value highlight-accent">{{ selectedJob.totalCost }} PKR</div>
+        </div>
+        <div class="spec-cell">
+          <label>Target Collection Window</label>
+          <div class="spec-value">{{ selectedJob.collectionSlot | date:'medium' }}</div>
+        </div>
+        <div class="spec-cell">
+          <label>Holding Expiry Boundary</label>
+          <div class="spec-value">{{ selectedJob.expiryTime | date:'medium' }}</div>
+        </div>
+      </div>
+
+      <!-- Description Context Box Module -->
+      <div class="narrative-description-container" *ngIf="selectedJob.description">
+        <div class="title-header-tag">Operational Parameters Memo:</div>
+        <p class="narrative-content-body">"{{ selectedJob.description }}"</p>
+      </div>
+
+      <!-- Contextual Action Dashboard Lower Control Deck Grid Layout -->
+      <footer class="action-footer-control-deck">
+        
+        <!-- Condition Set 1: Pending Queue -->
+        <div class="deck-wrapper-layout" *ngIf="selectedJob.statusName === 'Pending'">
+          <button class="btn button-primary full-width" (click)='startPrinting()'>Launch Production Sequence</button>
+          <button class="btn button-outline-danger full-width" (click)="triggerDiscardConfirmation()">Discard Print Job Run</button>
+        </div>
+
+        <!-- Condition Set 2: Active Printing Core Processing Loop -->
+        <div class="deck-wrapper-layout" *ngIf="selectedJob.statusName === 'Printing'">
+          <button class="btn button-success-confirm full-width" (click)="openBinAssignment()">Secure Storage Allocation & Bin</button>
+          
+          <!-- Inline Drawer Slide For Hardware Kiosk Matrix Map Selection Routing -->
+          <div class="inline-drawer-panel-slider" *ngIf="showBinAssignmentPanel">
+            <h4>Kiosk Bin Hardware Inventory Verification Routing</h4>
+            <p class="drawer-instruction-note">Select an active, verified empty kiosk node box containing the capacity size parameters required for this document.</p>
+            
+            <div class="hardware-bins-grid-matrix">
+              <div class="hardware-bin-element-card" 
+                   *ngFor="let bin of availableBins"
+                   [class.selected-green]="selectedBin?.binId === bin.binId"
+                   (click)="selectBin(bin)">
+                <div class="bin-card-header">
+                  <span class="large-display-id">{{ bin.binId }}</span>
+                  <span class="location-stamp-tag">{{ bin.locationName }}</span>
+                </div>
+                <div class="capacity-bar-container">
+                  <div class="capacity-fill-progress" 
+                       [style.width.%]="(bin.remainingCapacity / bin.totalCapacity) * 100"></div>
+                </div>
+                <div class="capacity-numerical-readout">{{ bin.remainingCapacity }} / {{ bin.totalCapacity }} pages free</div>
+              </div>
+            </div>
+
+            <button class="btn button-success-confirm full-width" 
+                    [disabled]="!selectedBin"
+                    (click)="confirmBinAssignment()">
+              Lock Storage Binding Matrix Now
+            </button>
+          </div>
+
+          <button class="btn button-outline-danger full-width" *ngIf="!showBinAssignmentPanel" (click)="triggerDiscardConfirmation()">Discard Print Job Run</button>
+        </div>
+
+        <!-- Condition Set 3: Binned Document Warehouse Storage Allocation -->
+        <div class="deck-wrapper-layout flex-centered" *ngIf="selectedJob.statusName === 'Binned'">
+          <div class="large-prominent-timer-card" [class.danger-state]="selectedJob.isNearExpiry">
+            <label>Holding Period Matrix Lifecycle Scope Remaining</label>
+            <div class="large-countdown-timer-digits">{{ selectedJob.displayCountdown || '00:00:00' }}</div>
+          </div>
+          
+          <button class="btn button-primary full-width" (click)="navigateToHandover()">Route to Handover Dashboard</button>
+          <button class="btn button-outline-danger full-width" *ngIf="selectedJob.displayCountdown === 'EXPIRED'" (click)="triggerDiscardConfirmation()">Purge Expired Uncollected Cache</button>
+        </div>
+      </footer>
+    </div>
+  </section>
 </div>
 
-<!-- Modal Overlays for Hardware Bin Assignments -->
-<div class="modal-backdrop" *ngIf="showBinModal">
-    <div class="modal-surface">
-        <h3>Assign Physical Storage Location</h3>
-        <p>Select an active, open hardware bin slot capable of accepting this job's scale profile.</p>
-
-        <div class="form-field">
-            <label>Available Target Bins (Kiosk Capacity Verified)</label>
-            <!-- Change [value]="bin.binId" to [ngValue]="bin.binId" -->
-            <select [(ngModel)]="selectedBinId" class="premium-select">
-                <option value="" disabled selected>Choose a verified open bin slot...</option>
-                <option *ngFor="let bin of availableBins" [ngValue]="bin.binId">
-                    Bin {{ bin.binId }} — Kiosk: {{ bin.locationName }} (Remaining: {{ bin.remainingCapacity }} pages)
-                </option>
-            </select>
-        </div>
-
-        <div class="modal-actions">
-            <button class="btn btn-cancel" (click)="showBinModal = false">Cancel Transition</button>
-            <button class="btn btn-confirm" [disabled]="!selectedBinId" (click)="executeBinBinding()">Lock Binding & Bin
-                Job</button>
-        </div>
+<!-- Custom System Modal Dialogue Component Backdrop For Security Signoffs -->
+<div class="custom-modal-dialogue-overlay" *ngIf="showDiscardModal">
+  <div class="modal-surface-container">
+    <div class="modal-header-block-danger">⚠️ Terminal Deletion Authorization Required</div>
+    <p class="modal-body-copy">You are attempting to wipe this document run from the queue pipeline layout. This action terminates billing structures and can't be undone. Confirm discard?</p>
+    <div class="modal-action-footer-buttons">
+      <button class="btn button-cancel" (click)="showDiscardModal = false">Cancel Transition</button>
+      <button class="btn button-danger-confirm" (click)="executeDiscard()">Confirm Drop Request</button>
     </div>
+  </div>
 </div>

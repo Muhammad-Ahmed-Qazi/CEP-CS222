@@ -10,5 +10,6 @@ import { AdminKiosksService } from './admin-kiosks.service';
   imports: [LoggingModule],
   controllers: [AdminController, AdminLogsController, AdminKiosksController],
   providers: [AdminService, AdminKiosksService],
+  exports: [AdminKiosksService], // Exporting for OperatorModule
 })
 export class AdminModule {}

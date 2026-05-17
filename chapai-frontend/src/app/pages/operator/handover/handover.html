@@ -1,1 +1,87 @@
-<p>handover works!</p>
+<div class="dashboard-layout">
+  <header class="page-header">
+    <div class="title-area">
+      <h1>Document Handover</h1>
+      <p>Scan user QR token to verify identity and release binned documents.</p>
+    </div>
+  </header>
+
+  <!-- Status Messages -->
+  <div *ngIf="errorMessage" class="alert error-alert">
+    {{ errorMessage }}
+  </div>
+  <div *ngIf="successMessage" class="alert success-alert">
+    {{ successMessage }}
+  </div>
+
+  <!-- QR Input Section -->
+  <div class="grid-card search-card">
+    <div class="input-group">
+      <input 
+        type="text" 
+        class="premium-input" 
+        [(ngModel)]="qrToken" 
+        (keyup.enter)="lookUpJob()"
+        placeholder="Enter or scan QR token..." 
+        [disabled]="isLoading || scannedJob"
+        autofocus>
+      <button 
+        class="btn btn-primary" 
+        (click)="lookUpJob()" 
+        [disabled]="!qrToken || isLoading || scannedJob">
+        <span *ngIf="!isLoading">Look Up Job</span>
+        <span *ngIf="isLoading" class="spinner"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Job Details Result Card -->
+  <div class="grid-card result-card" *ngIf="scannedJob">
+    <div class="card-header">
+      <h2>Job #CP-{{ scannedJob.jobId }}</h2>
+      <span class="status-pill binned">Ready for Collection</span>
+    </div>
+
+    <div class="details-grid">
+      <!-- User Info -->
+      <div class="detail-block">
+        <label>Student Profile</label>
+        <p class="primary-text">{{ scannedJob.userFirstName }} {{ scannedJob.userLastName }}</p>
+        <p class="secondary-text">{{ scannedJob.userEmail }}</p>
+      </div>
+
+      <!-- Print Spec -->
+      <div class="detail-block">
+        <label>Print Specifications</label>
+        <p class="primary-text">{{ scannedJob.pageCount }} Pages &times; {{ scannedJob.copies }} Copies</p>
+        <p class="secondary-text capitalize">{{ scannedJob.jobType }} Run</p>
+      </div>
+
+      <!-- Timing -->
+      <div class="detail-block">
+        <label>Time Matrix</label>
+        <p class="primary-text">{{ scannedJob.collectionSlot | date:'shortTime' }}</p>
+        <p class="secondary-text timer-badge" [class.danger]="scannedJob.isExpired">
+          {{ countdownText }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Prominent Bin Display -->
+    <div class="bin-display">
+      <div class="kiosk-name">{{ scannedJob.locationName }}</div>
+      <div class="bin-number">Bin {{ scannedJob.binId }}</div>
+      <div *ngIf="scannedJob.isExpired" class="expired-warning">
+        Warning: This document has exceeded its holding period but can still be released.
+      </div>
+    </div>
+
+    <div class="card-actions">
+      <button class="btn btn-cancel" (click)="cancelLookup()" [disabled]="isLoading">Cancel</button>
+      <button class="btn btn-cyan" (click)="executeHandover()" [disabled]="isLoading">
+        <span *ngIf="!isLoading">Confirm Handover</span>
+        <span *ngIf="isLoading" class="spinner"></span>
+      </button>
+    </div>
+  </div>
+</div>

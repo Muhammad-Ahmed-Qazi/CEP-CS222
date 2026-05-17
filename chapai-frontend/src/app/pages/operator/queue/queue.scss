@@ -1,93 +1,813 @@
-.dashboard-layout {
-  padding: 40px;
+.split-workspace-panel {
+  display: flex;
+  height: 100%;
+  width: 100%;
   background-color: #0b0f19;
-  min-height: 100vh;
-  color: #f8fafc;
-  font-family: 'Inter', sans-serif;
+}
 
-  .queue-header {
+// Left Feed Columns Framework (38%)
+.left-queue-feed {
+  width: 38%;
+  border-right: 1px solid #1f2937;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .feed-header {
+    padding: 16px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 32px;
 
-    h1 { font-size: 32px; font-weight: 700; color: #f8fafc; margin-bottom: 6px; }
-    p { color: #64748b; font-size: 14px; }
+    .header-main-title {
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #f8fafc;
+      }
 
-    .type-segmented-control {
-      display: flex;
-      background-color: #111827;
-      padding: 4px;
-      border-radius: 8px;
+      .refresh-telemetry {
+        font-size: 11px;
+        color: #64748b;
+        font-family: 'JetBrains Mono', monospace;
+      }
+    }
+
+    .manual-sync-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 6px;
+      border-radius: 6px;
       border: 1px solid #1f2937;
+      transition: all 0.2s;
 
-      button {
-        background: transparent; border: none; color: #94a3b8; padding: 8px 16px;
-        font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 6px; transition: all 0.2s;
-        
-        &.active { background-color: #3b82f6; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+      &:hover {
+        background: #111827;
       }
     }
   }
 
-  .status-filters {
-    display: flex; gap: 12px; margin-bottom: 24px;
+  .filter-tabs-strip {
+    display: flex;
+    border-bottom: 1px solid #1f2937;
+    padding: 0 16px;
+    gap: 8px;
+
     button {
-      background: #111827; border: 1px solid #1f2937; color: #94a3b8; padding: 10px 20px;
-      border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;
-      &:hover { border-color: #4b5563; color: #f8fafc; }
-      &.active { background: rgba(59, 130, 246, 0.15); border-color: #3b82f6; color: #60a5fa; }
-    }
-  }
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 12px;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.2s;
 
-  .grid-card {
-    background-color: #111827; border: 1px solid #1f2937; border-radius: 12px; overflow: hidden;
-    
-    .data-table {
-      width: 100%; border-collapse: collapse; text-align: left;
-      th { background-color: #0f172a; padding: 16px; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #1f2937; }
-      td { padding: 18px 16px; border-bottom: 1px solid #1f2937; vertical-align: middle; font-size: 14px; }
-      
-      .bold-id { font-weight: 700; color: #3b82f6; }
-      .user-cell { display: flex; flex-direction: column; .user-name { font-weight: 600; color: #e2e8f0; } .user-email { font-size: 12px; color: #64748b; } }
-      .page-badge { background: #1f2937; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #cbd5e1; }
-      
-      .status-pill {
-        padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase;
-        &[data-status="Pending"] { background: rgba(59,130,246,0.12); color: #60a5fa; }
-        &[data-status="Printing"] { background: rgba(245,158,11,0.12); color: #fbbf24; }
-        &[data-status="Binned"] { background: rgba(16,185,129,0.12); color: #34d399; }
-        &[data-status="Discarded"] { background: rgba(239,68,68,0.12); color: #f87171; }
+      &:hover {
+        color: #f8fafc;
       }
 
-      .timer-badge {
-        background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #34d399; padding: 4px 8px; border-radius: 6px; font-size: 13px; font-weight: 600;
-        &.danger { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.25); color: #f87171; animation: pulse 2s infinite; }
+      &.active-tab {
+        color: #3b82f6;
+        font-weight: 600;
+
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: -1px;
+          left: 0;
+          width: 100%;
+          height: 2px;
+          background-color: #3b82f6;
+        }
       }
     }
   }
 }
 
-// Interactive Action Button System
+.scrollable-rows-frame {
+  flex: 1; 
+  overflow-y: auto; 
+  padding: 16px;
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px; // Increased gap for distinct separation
+
+  // 💡 Target all immediate child containers (including structural div/ng-containers)
+  & > * {
+    display: flex;
+    flex-direction: column;
+    gap: 12px; // Forces the 12px spacing between individual iterated cards or skeletons
+  }
+
+  .empty-feed {
+    padding: 40px 16px; text-align: center; color: #64748b; font-size: 13px;
+  }
+}
+
+// Specialized Enterprise Cards Styles
+.job-card-item {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-left: 4px solid #374151;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.03);
+    transform: translateX(2px);
+  }
+
+  &.selected-state {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .card-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .monospace-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #64748b;
+    }
+  }
+
+  .card-identity-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+
+    .student-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    .type-pill {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(59, 130, 246, 0.1);
+      color: #3b82f6;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+
+      &.bulk {
+        background: rgba(251, 191, 36, 0.1);
+        color: #fbbf24;
+        border-color: rgba(251, 191, 36, 0.2);
+      }
+    }
+  }
+
+  .card-base-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #94a3b8;
+
+    .realtime-countdown {
+      font-weight: 600;
+      color: #fbbf24;
+
+      &.critical-danger {
+        color: #f87171;
+        animation: flashWarning 1.5s infinite;
+      }
+    }
+
+    .time-stamp {
+      font-family: 'JetBrains Mono', monospace;
+      color: #64748b;
+    }
+  }
+}
+
+// Right Panel Design (62%)
+.right-detail-console {
+  width: 62%;
+  background: #111827;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-y: auto;
+
+  .unselected-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    text-align: center;
+    color: #64748b;
+
+    .central-prompt-graphic {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+
+    p {
+      max-width: 320px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  }
+
+  .inspection-viewport {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    animation: slideUpIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .inspection-header {
+    border-bottom: 1px solid #1f2937;
+    padding-bottom: 16px;
+
+    .title-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      h2 {
+        margin: 0;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 24px;
+        font-weight: 700;
+      }
+    }
+
+    .user-subtext {
+      margin-top: 6px;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+  }
+}
+
+// Progress Timeline Horizontal Bars Map Layout
+.horizontal-state-timeline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 8px;
+  background: #0b0f19;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+
+  .timeline-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+
+    .marker {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #374151;
+      transition: all 0.3s;
+    }
+
+    .node-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    &.passed {
+      .marker {
+        background: #3b82f6;
+        box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
+      }
+
+      .node-label {
+        color: #f8fafc;
+      }
+
+      .marker.pulse {
+        animation: timelinePulse 1.2s infinite alternate;
+      }
+    }
+  }
+
+  .timeline-connector-line {
+    flex: 1;
+    height: 2px;
+    background: #374151;
+    margin: 0 4px;
+    margin-bottom: 16px;
+    transition: background 0.3s;
+
+    &.passed {
+      background: #3b82f6;
+    }
+  }
+}
+
+// Two Column Specifications Grids Dashboard Frame Layout Matrix
+.telemetry-specifications-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+
+  .spec-cell {
+    background: #0b0f19;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .spec-value {
+      font-size: 15px;
+      font-weight: 500;
+      color: #f8fafc;
+
+      &.capitalize {
+        text-transform: capitalize;
+      }
+    }
+
+    .highlight-accent {
+      color: #34d399;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+  }
+}
+
+// Notes Narratives Container Layout
+.narrative-description-container {
+  background: #0b0f19;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 12px 16px;
+
+  .title-header-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .narrative-content-body {
+    margin: 0;
+    font-size: 13px;
+    font-style: italic;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+}
+
+// Inline Dynamic Overlay Drawers Sliding Window Panel Layout Matrix
+.inline-drawer-panel-slider {
+  background: #0b0f19;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: slideUpIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #f8fafc;
+  }
+
+  .drawer-instruction-note {
+    margin: 0;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.4;
+  }
+}
+
+.hardware-bins-grid-matrix {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  .hardware-bin-element-card {
+    background: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: #64748b;
+    }
+
+    &.selected-green {
+      border-color: #34d399;
+      background: rgba(52, 211, 153, 0.03);
+    }
+
+    .bin-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .large-display-id {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 16px;
+        font-weight: 700;
+        color: #f8fafc;
+      }
+
+      .location-stamp-tag {
+        font-size: 11px;
+        color: #64748b;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 90px;
+      }
+    }
+
+    .capacity-bar-container {
+      height: 4px;
+      width: 100%;
+      background: #1f2937;
+      border-radius: 2px;
+      overflow: hidden;
+
+      .capacity-fill-progress {
+        height: 100%;
+        background: #3b82f6;
+        border-radius: 2px;
+      }
+    }
+
+    .capacity-numerical-readout {
+      font-size: 10px;
+      color: #94a3b8;
+      text-align: right;
+    }
+  }
+}
+
+// Binned Tracking Large Graphic Prominent Status Blocks Layout
+.large-prominent-timer-card {
+  width: 100%;
+  background: #0b0f19;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .large-countdown-timer-digits {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: #fbbf24;
+  }
+
+  &.danger-state {
+    border-color: rgba(248, 113, 113, 0.3);
+    background: rgba(239, 68, 68, 0.02);
+
+    .large-countdown-timer-digits {
+      color: #f87171;
+      animation: flashWarning 1.5s infinite;
+    }
+  }
+}
+
+// Lower Control Deck Layout Footers Deck Utilities
+.action-footer-control-deck {
+  border-top: 1px solid #1f2937;
+  padding-top: 20px;
+  margin-top: auto;
+
+  .deck-wrapper-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+}
+
+// System Button Kit Elements Definitions Palette Resets
 .btn {
-  padding: 8px 14px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-  &-print { background-color: #3b82f6; color: white; &:hover { background-color: #2563eb; } }
-  &-bin { background-color: #10b981; color: white; &:hover { background-color: #059669; } }
-  &-discard { background-color: transparent; border: 1px solid #374151; color: #94a3b8; &:hover { background-color: rgba(239,68,68,0.1); border-color: #ef4444; color: #f87171; } }
-}
-.action-cell-group { display: flex; gap: 8px; }
-.archive-lock { color: #4b5563; font-size: 12px; font-style: italic; }
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
-// Modals Overlay Architectures
-.modal-backdrop {
-  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2,6,17,0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100;
-  .modal-surface {
-    background: #111827; border: 1px solid #1f2937; padding: 32px; border-radius: 12px; width: 100%; max-width: 480px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
-    h3 { font-size: 20px; font-weight: 700; color: #f8fafc; margin-bottom: 8px; }
-    p { color: #64748b; font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
-    .premium-select { width: 100%; padding: 12px; background: #0b0f19; border: 1px solid #1f2937; border-radius: 8px; color: #f8fafc; font-size: 14px; &:focus { border-color: #3b82f6; outline: none; } }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px; .btn-cancel { background: transparent; color: #94a3b8; &:hover { color: white; } } .btn-confirm { background: #3b82f6; color: white; &:disabled { background: #1f2937; color: #4b5563; cursor: not-allowed; } } }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  &.full-width {
+    width: 100%;
+  }
+
+  &.button-primary {
+    background-color: #3b82f6;
+    color: #f8fafc;
+
+    &:hover:not(:disabled) {
+      background-color: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+  }
+
+  &.button-success-confirm {
+    background-color: #10b981;
+    color: #0b0f19;
+
+    &:hover:not(:disabled) {
+      background-color: #059669;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+  }
+
+  &.button-outline-danger {
+    background: transparent;
+    border: 1px solid #1f2937;
+    color: #f87171;
+
+    &:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+  }
+
+  &.button-cancel {
+    background: #1f2937;
+    color: #94a3b8;
+
+    &:hover:not(:disabled) {
+      background: #374151;
+      color: #f8fafc;
+    }
+  }
+
+  &.button-danger-confirm {
+    background: #ef4444;
+    color: #f8fafc;
+
+    &:hover:not(:disabled) {
+      background: #dc2626;
+      transform: translateY(-1px);
+    }
   }
 }
 
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+// Inline System Standard Validation Alert Pills
+.inline-alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 8px 16px;
+
+  &.warning-state {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #f87171;
+  }
+}
+
+.pill-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+
+  &[data-status="Pending"] {
+    background: rgba(148, 163, 184, 0.1);
+    color: #94a3b8;
+    border-color: rgba(148, 163, 184, 0.2);
+  }
+
+  &[data-status="Printing"] {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.2);
+  }
+
+  &[data-status="Binned"] {
+    background: rgba(251, 191, 36, 0.1);
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.2);
+  }
+
+  &[data-status="Collected"] {
+    background: rgba(52, 211, 153, 0.1);
+    color: #34d399;
+    border-color: rgba(52, 211, 153, 0.2);
+  }
+
+  &[data-status="Discarded"] {
+    background: rgba(248, 113, 113, 0.1);
+    color: #f87171;
+    border-color: rgba(248, 113, 113, 0.2);
+  }
+}
+
+// Global System Spinner Overlay Layers 
+.spinner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(11, 15, 25, 0.7);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.loading-ring-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-bottom-color: #3b82f6;
+  border-radius: 50%;
+  animation: rotSpinner 0.75s linear infinite;
+}
+
+// Custom Modal Dialogue Backdrop Architecture Container Surface Panels
+.custom-modal-dialogue-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .modal-surface-container {
+    background: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 420px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    animation: slideUpIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+    .modal-header-block-danger {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f87171;
+    }
+
+    .modal-body-copy {
+      margin: 0;
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .modal-action-footer-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+  }
+}
+
+// Structural Loading Skeletons Mockups Templates Items
+.skeleton-card-row {
+  height: 78px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  width: 100%;
+}
+
+.animated-shimmer {
+  background: linear-gradient(90deg, #111827 25%, #1f2937 50%, #111827 75%);
+  background-size: 200% 100%;
+  animation: shimmerLoop 1.5s infinite;
+}
+
+// Universal Animation Frames Matrix Layout Core Rules
+@keyframes rotSpinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmerLoop {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes flashWarning {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes timelinePulse {
+  from {
+    box-shadow: 0 0 2px #3b82f6;
+  }
+
+  to {
+    box-shadow: 0 0 10px #3b82f6, 0 0 14px rgba(59, 130, 246, 0.4);
+  }
+}
+
+@keyframes slideUpIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
