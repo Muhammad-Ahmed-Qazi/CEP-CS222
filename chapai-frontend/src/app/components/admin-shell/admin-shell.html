@@ -1,0 +1,55 @@
+<div class="admin-shell-layout">
+  <!-- Fixed Left Sidebar -->
+  <aside class="sidebar">
+    <div class="brand-section">
+      <div class="logo">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+        </svg>
+        <span class="app-name">Chapai</span>
+      </div>
+      <span class="tagline">Print Management</span>
+    </div>
+
+    <div class="user-info">
+      <div class="avatar">{{ adminName.charAt(0) }}</div>
+      <div class="details">
+        <span class="name">{{ adminName }}</span>
+        <span class="role-label">Administrator</span>
+      </div>
+    </div>
+
+    <nav class="nav-menu">
+      <a *ngFor="let link of navLinks" 
+         [routerLink]="link.path" 
+         routerLinkActive="active" 
+         class="nav-link">
+        <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="link.icon"></path>
+        </svg>
+        {{ link.label }}
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="logout-btn" (click)="logout()">
+        <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+        Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <header class="topbar">
+      <span class="panel-label">Admin Panel</span>
+      <span class="clock">{{ currentTime | date:'MMM d, y, h:mm:ss a' }}</span>
+    </header>
+
+    <main class="content-router">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

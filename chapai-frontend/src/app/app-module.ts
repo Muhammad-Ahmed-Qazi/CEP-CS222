@@ -11,6 +11,7 @@ import { Login } from './pages/admin/login/login';
 import { OperatorShell } from './components/operator-shell/operator-shell'; // 💡 Fixed class name and path reference
 import { Queue } from './pages/operator/queue/queue';
 import { AdminDashboardStubComponent } from './app-routing-module';
+import { Queue as AdminQueue} from './pages/admin/queue/queue';
 
 // Services & Guards
 import { AuthService } from './services/auth';
@@ -21,16 +22,19 @@ import { OperatorGuard } from './guards/operator-guard';
 import { Handover } from './pages/operator/handover/handover';
 import { Bins } from './pages/operator/bins/bins';
 import { Profile } from './pages/operator/profile/profile';
+import { AdminShell } from './components/admin-shell/admin-shell';
 
 @NgModule({
   declarations: [
     App,
-    Login,                  // 💡 CRITICAL: Added to declarations so template bindings like onLogin, email, and password work
+    Login, // 💡 CRITICAL: Added to declarations so template bindings like onLogin, email, and password work
     OperatorShell, // 💡 Updated to match the actual generated class name
-    Queue,                   // 💡 CRITICAL: Added to declarations so pipe errors and selectedJob variables evaluate cleanly
+    Queue, // 💡 CRITICAL: Added to declarations so pipe errors and selectedJob variables evaluate cleanly
     Handover,
     Bins,
-    Profile
+    Profile,
+    AdminShell,
+    AdminQueue, // 💡 CRITICAL: Added to declarations so template bindings like onRefresh and queues work without errors
   ],
   imports: [
     BrowserModule,
@@ -39,17 +43,11 @@ import { Profile } from './pages/operator/profile/profile';
     CommonModule,
     ReactiveFormsModule,
     AppRoutingModule,
-    
+
     // Standalone Components belong here in imports
-    AdminDashboardStubComponent
+    AdminDashboardStubComponent,
   ],
-  providers: [
-    AuthService,
-    PrintData,
-    AuthGuard,
-    AdminGuard,
-    OperatorGuard
-  ],
-  bootstrap: [App]
+  providers: [AuthService, PrintData, AuthGuard, AdminGuard, OperatorGuard],
+  bootstrap: [App],
 })
-export class AppModule { }
+export class AppModule {}

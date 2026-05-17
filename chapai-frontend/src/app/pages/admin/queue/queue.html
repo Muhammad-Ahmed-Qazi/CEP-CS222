@@ -1,0 +1,161 @@
+<div class="admin-queue animate-entry">
+  
+  <div class="page-header">
+    <div class="title-group">
+      <h1>Print Queue</h1>
+      <p>All jobs across all kiosks — read only</p>
+    </div>
+  </div>
+
+  <div class="summary-strip">
+    <div class="stat-card">
+      <span class="label">Total (Current Page)</span>
+      <span class="value">{{ stats.total }}</span>
+    </div>
+    <div class="stat-card pending-card">
+      <span class="label">Pending</span>
+      <span class="value">{{ stats.pending }}</span>
+    </div>
+    <div class="stat-card printing-card">
+      <span class="label">Printing</span>
+      <span class="value">{{ stats.printing }}</span>
+    </div>
+    <div class="stat-card binned-card">
+      <span class="label">Binned</span>
+      <span class="value">{{ stats.binned }}</span>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="filter-tabs">
+      <button *ngFor="let tab of filters" 
+              class="tab" 
+              [class.active]="currentFilter === tab"
+              (click)="applyFilter(tab)">
+        {{ tab }}
+      </button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="job-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>File</th>
+            <th>Pages</th>
+            <th>Color</th>
+            <th>Status</th>
+            <th>Kiosk</th>
+            <th>Bin</th>
+            <th>Submitted</th>
+          </tr>
+        </thead>
+        
+        <tbody *ngIf="isLoading">
+          <tr *ngFor="let i of [1,2,3,4,5]" class="skeleton-row">
+            <td><div class="skel-box"></div></td>
+            <td><div class="skel-box"></div></td>
+            <td><div class="skel-box short"></div></td>
+            <td><div class="skel-box short"></div></td>
+            <td><div class="skel-box badge"></div></td>
+            <td><div class="skel-box"></div></td>
+            <td><div class="skel-box short"></div></td>
+            <td><div class="skel-box"></div></td>
+          </tr>
+        </tbody>
+
+        <tbody *ngIf="!isLoading && filteredJobs.length === 0">
+          <tr>
+            <td colspan="8" class="empty-state">No jobs found for this filter.</td>
+          </tr>
+        </tbody>
+
+        <ng-container *ngFor="let job of filteredJobs">
+          <tr class="main-row" (click)="toggleExpand(job.id)" [class.expanded]="expandedJobId === job.id">
+            <td>
+              <div class="user-cell">
+                <span class="priority-dot" 
+                      [class.faculty]="job.priority === 'Faculty'" 
+                      [class.student]="job.priority === 'Student'"
+                      [title]="job.priority"></span>
+                <div class="user-text">
+                  <span class="name">{{ job.studentName }}</span>
+                  <span class="id">{{ job.studentId }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="file-text">
+                <span class="fname">{{ job.fileName }}</span>
+                <span class="ftype">{{ job.fileType }}</span>
+              </div>
+            </td>
+            <td>{{ job.pageCount }} ({{ job.totalPages }} total)</td>
+            <td>{{ job.colorMode }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(job.status)">
+                {{ job.status }}
+              </span>
+            </td>
+            <td>
+              <div class="kiosk-text">
+                <span class="label">{{ job.kioskLabel }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="bin-badge" *ngIf="job.assignedBin">{{ job.assignedBin }}</span>
+              <span class="text-muted" *ngIf="!job.assignedBin">-</span>
+            </td>
+            <td class="time-cell">{{ job.submittedAt | date:'shortTime' }}</td>
+          </tr>
+
+          <!-- Expandable Detail Row -->
+          <tr *ngIf="expandedJobId === job.id" class="detail-row animate-entry">
+            <td colspan="8">
+              <div class="detail-panel">
+                <div class="detail-grid">
+                  <div class="d-item">
+                    <span class="d-label">Job ID</span>
+                    <span class="d-value monospace">{{ job.id }}</span>
+                  </div>
+                  <div class="d-item">
+                    <span class="d-label">Copies</span>
+                    <span class="d-value">{{ job.copies }}</span>
+                  </div>
+                  <div class="d-item">
+                    <span class="d-label">Paper Size</span>
+                    <span class="d-value">{{ job.paperSize }}</span>
+                  </div>
+                  <div class="d-item">
+                    <span class="d-label">Collection Slot</span>
+                    <span class="d-value">{{ job.collectionSlot }}</span>
+                  </div>
+                  <div class="d-item">
+                    <span class="d-label">Kiosk Location</span>
+                    <span class="d-value">{{ job.kioskLocation }}</span>
+                  </div>
+                  <div class="d-item">
+                    <span class="d-label">Full Submission Time</span>
+                    <span class="d-value">{{ job.submittedAt | date:'medium' }}</span>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </table>
+    </div>
+
+    <!-- Pagination controls -->
+    <div class="pagination-strip">
+      <span class="page-info">
+        Showing page <strong>{{ currentPage }}</strong> of {{ (totalJobs / limit) | number:'1.0-0' }} 
+        <span class="text-muted">({{ totalJobs }} total records)</span>
+      </span>
+      <div class="page-actions">
+        <button class="btn-page" [disabled]="currentPage === 1" (click)="prevPage()">Previous</button>
+        <button class="btn-page" [disabled]="currentPage >= (totalJobs / limit)" (click)="nextPage()">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
