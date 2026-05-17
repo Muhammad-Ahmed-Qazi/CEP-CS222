@@ -1,1 +1,228 @@
-<p>kiosks works!</p>
+<div class="admin-kiosks-page form-entry">
+  
+  <div class="page-header">
+    <div class="title-area">
+      <h1>Kiosks</h1>
+      <p class="text-muted">Manage kiosks and their bins</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAddKiosk()">Add Kiosk</button>
+  </div>
+
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Label</th>
+          <th>Location</th>
+          <th>Bins</th>
+          <th class="actions-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Skeleton Loader -->
+        <ng-container *ngIf="isLoading">
+          <tr *ngFor="let s of skeletonRows" class="skeleton-row">
+            <td><div class="skeleton-box"></div></td>
+            <td><div class="skeleton-box"></div></td>
+            <td><div class="skeleton-box"></div></td>
+            <td><div class="skeleton-box"></div></td>
+          </tr>
+        </ng-container>
+
+        <!-- Data Rows -->
+        <ng-container *ngFor="let kiosk of kiosks">
+          
+          <!-- Primary Kiosk Row -->
+          <tr class="interactive-row" [class.expanded]="expandedKioskId === kiosk.id" (click)="toggleExpand(kiosk.id)">
+            <td class="font-medium text-primary">{{ kiosk.label }}</td>
+            <td class="text-secondary">{{ kiosk.location }}</td>
+            <td class="text-secondary">{{ kiosk.activeBinCount }} / {{ kiosk.binCount }}</td>
+            <td class="actions-col">
+              <button class="icon-btn" (click)="openEditKiosk(kiosk, $event)" title="Edit">✎</button>
+              
+              <!-- Kiosk Delete Popover Wrapper -->
+              <div class="popover-wrapper">
+                <button class="icon-btn text-error" (click)="toggleDeleteKioskPopover(kiosk.id, $event)" title="Delete">🗑</button>
+                <div class="delete-popover form-entry" *ngIf="activeDeleteKioskId === kiosk.id" (click)="$event.stopPropagation()">
+                  <p class="popover-title">Delete {{ kiosk.label }}?</p>
+                  <p class="popover-subtitle">This action cannot be undone.</p>
+                  <div class="popover-actions">
+                    <button class="btn btn-sm btn-ghost" (click)="activeDeleteKioskId = null">Cancel</button>
+                    <button class="btn btn-sm btn-danger" [disabled]="isDeleting" (click)="confirmDeleteKiosk(kiosk.id)">
+                      {{ isDeleting ? 'Deleting...' : 'Delete' }}
+                    </button>
+                  </div>
+                  <p class="inline-error" *ngIf="rowErrorId === kiosk.id">{{ rowErrorMessage }}</p>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Expanded Bins Row -->
+          <tr class="expanded-detail-row" *ngIf="expandedKioskId === kiosk.id">
+            <td colspan="4" class="expanded-cell">
+              <div class="bins-container form-entry" (click)="$event.stopPropagation()">
+                
+                <div class="bins-header">
+                  <h3 class="text-primary">Bins for {{ kiosk.label }}</h3>
+                </div>
+
+                <div class="loading-text text-muted" *ngIf="kiosk.isLoadingBins">Loading bins...</div>
+                
+                <table class="inner-table" *ngIf="!kiosk.isLoadingBins">
+                  <thead>
+                    <tr>
+                      <th>Bin ID</th>
+                      <th>Bin Label</th>
+                      <th>Capacity</th>
+                      <th>Usage</th>
+                      <th>Status</th>
+                      <th>Jobs</th>
+                      <th class="actions-col">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <ng-container *ngFor="let bin of kiosk.bins">
+                      
+                      <!-- Bin Display Row -->
+                      <tr *ngIf="editingBinId !== bin.binId">
+                        <td class="text-secondary font-mono text-small">{{ bin.binId }}</td>
+                        <td class="text-primary">{{ bin.label }}</td>
+                        <td class="text-secondary">{{ bin.capacityPages }} pages</td>
+                        <td>
+                          <div class="capacity-wrapper">
+                            <span class="text-small">{{ bin.usedPages || 0 }} / {{ bin.capacityPages }}</span>
+                            <div class="capacity-track">
+                              <div class="capacity-fill" [ngClass]="getCapacityClass(bin)" [style.width.%]="getCapacityFill(bin)"></div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="badge" [ngClass]="'badge-' + bin.status">{{ bin.status | titlecase }}</span>
+                        </td>
+                        <td class="text-secondary">{{ bin.jobCount }}</td>
+                        <td class="actions-col">
+                          <button class="icon-btn" (click)="openEditBin(bin, kiosk.id)" title="Edit">✎</button>
+                          
+                          <div class="popover-wrapper" (click)="$event.stopPropagation()">
+                            <button class="icon-btn text-error" (click)="toggleDeleteBinPopover(bin.binId, $event)" title="Delete">🗑</button>
+                            <div class="delete-popover form-entry" *ngIf="activeDeleteBinId === bin.binId" (click)="$event.stopPropagation()">
+                              <p class="popover-title">Delete {{ bin.label || bin.binId }}?</p>
+                              <p class="popover-subtitle">This action cannot be undone.</p>
+                              <div class="popover-actions">
+                                <button class="btn btn-sm btn-ghost" (click)="activeDeleteBinId = null">Cancel</button>
+                                <button class="btn btn-sm btn-danger" [disabled]="isDeleting" (click)="confirmDeleteBin(kiosk.id, bin.binId)">
+                                  {{ isDeleting ? 'Deleting...' : 'Delete' }}
+                                </button>
+                              </div>
+                              <p class="inline-error" *ngIf="rowErrorId === bin.binId">{{ rowErrorMessage }}</p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+
+                      <!-- Bin Edit Inline Row -->
+                      <tr *ngIf="editingBinId === bin.binId" class="inline-form-row">
+                        <td colspan="7">
+                          <form [formGroup]="binForm" (ngSubmit)="submitBin(kiosk.id)" class="inline-form">
+                            <div class="form-group mb-0">
+                              <label class="text-small text-muted d-block">Bin ID</label>
+                              <input type="text" formControlName="binId" class="form-control" placeholder="Bin ID" readonly>
+                            </div>
+                            <div class="form-group mb-0">
+                              <label class="text-small text-muted d-block">Max Page Capacity</label>
+                              <input type="number" formControlName="maxPageCapacity" class="form-control" placeholder="Capacity">
+                            </div>
+                            <div class="inline-form-actions align-self-end">
+                              <button type="submit" class="btn btn-sm btn-primary" [disabled]="isSubmittingBin || binForm.invalid">Save</button>
+                              <button type="button" class="btn btn-sm btn-ghost" (click)="cancelBinForm()">Cancel</button>
+                            </div>
+                            <span class="inline-error" *ngIf="binFormError">{{ binFormError }}</span>
+                          </form>
+                        </td>
+                      </tr>
+
+                    </ng-container>
+
+                    <!-- Empty State -->
+                    <tr *ngIf="kiosk.bins?.length === 0 && isAddingBinToKioskId !== kiosk.id">
+                      <td colspan="7" class="text-muted text-center py-3">No bins configured for this kiosk.</td>
+                    </tr>
+
+                    <!-- Add New Bin Inline Row -->
+                    <tr *ngIf="isAddingBinToKioskId === kiosk.id && !editingBinId" class="inline-form-row form-entry">
+                      <td colspan="7">
+                        <form [formGroup]="binForm" (ngSubmit)="submitBin(kiosk.id)" class="inline-form">
+                          <div class="form-group mb-0">
+                            <input type="text" formControlName="binId" class="form-control" placeholder="Bin ID (e.g. A4)">
+                          </div>
+                          <div class="form-group mb-0">
+                            <input type="number" formControlName="maxPageCapacity" class="form-control" placeholder="Max Page Capacity">
+                          </div>
+                          <div class="inline-form-actions">
+                            <button type="submit" class="btn btn-sm btn-primary" [disabled]="isSubmittingBin || binForm.invalid">Save</button>
+                            <button type="button" class="btn btn-sm btn-ghost" (click)="cancelBinForm()">Cancel</button>
+                          </div>
+                          <span class="inline-error" *ngIf="binFormError">{{ binFormError }}</span>
+                        </form>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <div class="bins-footer" *ngIf="isAddingBinToKioskId !== kiosk.id">
+                  <button class="btn btn-sm btn-secondary mt-3" (click)="openAddBin(kiosk.id)">+ Add Bin</button>
+                </div>
+
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination-footer" *ngIf="!isLoading && totalKiosks > limit">
+      <span class="text-muted text-small">Page {{ currentPage }} of {{ totalPages }}</span>
+      <div class="page-controls">
+        <button class="btn btn-sm btn-ghost" [disabled]="currentPage === 1" (click)="changePage(-1)">Previous</button>
+        <button class="btn btn-sm btn-ghost" [disabled]="currentPage === totalPages" (click)="changePage(1)">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide-in Panel Overlay for Kiosks (Aligned Keys) -->
+<div class="panel-overlay" *ngIf="isPanelOpen" (click)="closeKioskPanel()">
+  <div class="slide-panel form-entry" (click)="$event.stopPropagation()">
+    <div class="panel-header">
+      <h2 class="text-primary">{{ panelMode === 'add' ? 'Add Kiosk' : 'Edit Kiosk' }}</h2>
+      <button class="icon-btn" (click)="closeKioskPanel()">✕</button>
+    </div>
+    <form [formGroup]="kioskForm" (ngSubmit)="submitKiosk()" class="panel-body">
+      
+      <div class="form-group">
+        <label class="text-primary">Location Name</label>
+        <input type="text" formControlName="locationName" class="form-control" placeholder="e.g. Engineering Block"
+               [class.has-error]="kioskForm.get('locationName')?.invalid && kioskForm.get('locationName')?.touched">
+      </div>
+
+      <div class="form-group">
+        <label class="text-primary">Status</label>
+        <select formControlName="status" class="form-control"
+                [class.has-error]="kioskForm.get('status')?.invalid && kioskForm.get('status')?.touched">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
+      <div class="panel-error text-error" *ngIf="panelError">{{ panelError }}</div>
+      <div class="panel-footer">
+        <button type="button" class="btn btn-ghost" (click)="closeKioskPanel()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="isSubmittingKiosk">
+          {{ isSubmittingKiosk ? 'Saving...' : 'Save Kiosk' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

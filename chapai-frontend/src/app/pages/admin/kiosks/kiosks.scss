@@ -1,0 +1,399 @@
+/* --- Variables Theme Alignment --- */
+$bg-main: #0b0f19;
+$bg-card: #111827;
+$border-color: #1f2937;
+$focus-ring: rgba(59, 130, 246, 0.15);
+$primary: #3b82f6;
+$primary-hover: #2563eb;
+$success: #34d399;
+$success-bg: rgba(16, 185, 129, 0.1);
+$error: #f87171;
+$error-bg: rgba(239, 68, 68, 0.1);
+$warning: #fbbf24;
+$warning-bg: rgba(251, 191, 36, 0.1);
+$text-primary: #f8fafc;
+$text-secondary: #94a3b8;
+$text-muted: #64748b;
+
+/* --- Typography & Basics --- */
+.text-primary { color: $text-primary; }
+.text-secondary { color: $text-secondary; }
+.text-muted { color: $text-muted; }
+.text-error { color: $error; }
+.text-small { font-size: 0.875rem; }
+.font-medium { font-weight: 500; }
+.mb-0 { margin-bottom: 0 !important; }
+.mt-3 { margin-top: 1rem; }
+.py-3 { padding-top: 1rem; padding-bottom: 1rem; }
+.text-center { text-align: center; }
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.form-entry {
+  animation: fadeSlideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* --- Container & Header --- */
+.admin-kiosks-page {
+  padding: 24px;
+  font-family: 'Inter', sans-serif;
+  color: $text-primary;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 1.5rem;
+    margin: 0 0 4px 0;
+    color: $text-primary;
+  }
+  p { margin: 0; }
+}
+
+/* --- Buttons --- */
+.btn {
+  font-family: 'Inter', sans-serif;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+
+.btn-primary {
+  background: $primary;
+  color: white;
+  &:hover:not(:disabled) { background: $primary-hover; }
+}
+
+.btn-secondary {
+  background: $border-color;
+  color: $text-primary;
+  &:hover:not(:disabled) { background: lighten($border-color, 10%); }
+}
+
+.btn-ghost {
+  background: transparent;
+  color: $text-secondary;
+  &:hover:not(:disabled) { color: $text-primary; }
+}
+
+.btn-danger {
+  background: $error;
+  color: white;
+  &:hover:not(:disabled) { background: darken($error, 10%); }
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: $text-secondary;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 1rem;
+
+  &:hover { color: $text-primary; background: $border-color; }
+  &.text-error:hover { color: $error; background: $error-bg; }
+}
+
+/* --- Table Structure --- */
+.table-card {
+  background: $bg-card;
+  border: 1px solid $border-color;
+  border-radius: 12px;
+  /* 1. Removed overflow: hidden so popovers can escape */
+  overflow: visible !important; 
+}
+
+table {
+  width: 100%;
+  /* 2. Changed to separate so we can manually round the header corners */
+  border-collapse: separate; 
+  border-spacing: 0;
+  text-align: left;
+}
+
+th, td {
+  padding: 16px;
+  border-bottom: 1px solid $border-color;
+}
+
+th {
+  color: $text-muted;
+  font-weight: 500;
+  font-size: 0.875rem;
+  background: rgba($bg-main, 0.4);
+}
+
+/* 3. Re-apply border radius to the top corners of the header */
+th:first-child { border-top-left-radius: 12px; }
+th:last-child { border-top-right-radius: 12px; }
+
+.actions-col { width: 100px; text-align: right; }
+
+.interactive-row {
+  cursor: pointer;
+  transition: background 0.2s;
+  
+  &:hover { background: $border-color; }
+  &.expanded { background: $border-color; }
+}
+
+.operator-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* --- Expanded Row (Bins) --- */
+.expanded-detail-row {
+  background: $bg-main;
+  
+  .expanded-cell {
+    padding: 24px;
+    border-bottom: 1px solid $border-color;
+  }
+}
+
+.bins-header {
+  margin-bottom: 16px;
+  h3 { margin: 0; font-size: 1.1rem; }
+}
+
+.inner-table {
+  background: $bg-card;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  /* Ensure inner tables don't clip either */
+  overflow: visible !important; 
+  
+  th, td { padding: 12px; }
+  tr:last-child td { border-bottom: none; }
+  
+  th:first-child { border-top-left-radius: 8px; }
+  th:last-child { border-top-right-radius: 8px; }
+}
+
+/* --- Inline Forms --- */
+.inline-form-row td {
+  background: rgba($primary, 0.05);
+}
+
+.inline-form {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  
+  .form-group { flex: 1; }
+  .inline-form-actions { display: flex; gap: 8px; }
+}
+
+/* --- Badges & Bars --- */
+.badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  
+  &.badge-available { background: $success-bg; color: $success; }
+  &.badge-full { background: $error-bg; color: $error; }
+  &.badge-reserved { background: $warning-bg; color: $warning; }
+}
+
+.capacity-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.capacity-track {
+  width: 100px;
+  height: 6px;
+  background: $border-color;
+  border-radius: 3px;
+  overflow: hidden;
+
+  .capacity-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+    &.success { background: $success; }
+    &.warning { background: $warning; }
+    &.error { background: $error; }
+  }
+}
+
+/* --- Popover System --- */
+.popover-wrapper { 
+  position: relative; 
+  display: inline-flex; 
+  align-items: center; 
+}
+
+.delete-popover {
+  /* 4. Position to the absolute LEFT of the action button */
+  position: absolute;
+  right: 100%; 
+  top: 50%;
+  transform: translateY(-50%); /* Centers it vertically relative to the button */
+  margin-right: 16px; /* Adds a nice gap between the popover and the trash icon */
+  
+  width: 240px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+
+  background: $bg-card;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 1px 1px $border-color;
+  text-align: left;
+
+  /* Scrollbar configuration */
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: lighten($border-color, 12%);
+    border-radius: 10px;
+    &:hover {
+      background: lighten($border-color, 22%);
+    }
+  }
+
+  .popover-title { margin: 0 0 4px 0; font-weight: 600; color: $text-primary; }
+  .popover-subtitle { margin: 0 0 16px 0; font-size: 0.8rem; color: $text-muted; }
+  
+  .popover-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}   
+
+.inline-error {
+  display: block;
+  color: $error;
+  font-size: 0.8rem;
+  margin-top: 8px;
+}
+
+/* --- Slide-in Panel --- */
+.panel-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.slide-panel {
+  width: 400px;
+  background: $bg-card;
+  border-left: 1px solid $border-color;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  h2 { margin: 0; font-size: 1.25rem; }
+}
+
+.panel-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 24px;
+}
+
+/* --- Forms --- */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  
+  label { font-size: 0.875rem; font-weight: 500; }
+}
+
+.form-control {
+  background: $bg-card;
+  border: 1px solid $border-color;
+  color: $text-primary;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: $primary;
+    box-shadow: 0 0 0 4px $focus-ring;
+  }
+  &.has-error {
+    border-color: $error;
+    &:focus { box-shadow: 0 0 0 4px $error-bg; }
+  }
+}
+
+/* --- Skeleton --- */
+.skeleton-box {
+  height: 20px;
+  background: linear-gradient(90deg, $border-color 25%, lighten($border-color, 5%) 50%, $border-color 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* --- Pagination --- */
+.pagination-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-top: 1px solid $border-color;
+  
+  .page-controls { display: flex; gap: 8px; }
+}
