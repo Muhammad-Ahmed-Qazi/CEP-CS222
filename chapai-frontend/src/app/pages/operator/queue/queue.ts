@@ -153,12 +153,15 @@ export class Queue implements OnInit, OnDestroy {
 
     try {
       this.isActionLoading = true;
+      this.inlineErrorMessage = null; // Reset error track
       const jobId = this.selectedJob.jobId;
 
-      // Call your backend execution service pipeline
-      await this.printService.updateJobStatus(jobId, 'Printing');
+      // 💡 THE FIX: Wrap the service's observable in firstValueFrom.
+      // 'await' now pauses execution here until the HTTP PATCH request 
+      // completes its round-trip transaction with NestJS and Oracle.
+      await firstValueFrom(this.printService.updateJobStatus(jobId, 'Printing'));
 
-      // 💡 THE FIX: Update local UI variables immediately to match backend changes
+      // --- State mutations now execute ONLY AFTER the database successfully writes ---
       this.selectedJob.statusName = 'Printing';
 
       // Auto shift filter view focus so the card doesn't disappear from sight
@@ -169,9 +172,12 @@ export class Queue implements OnInit, OnDestroy {
       this.selectedJob = this.filteredJobs.find(j => j.jobId === jobId) || null;
 
     } catch (error) {
+      console.error('[Queue Status Change Error]:', error);
       this.inlineErrorMessage = "Could not start production workflow loop.";
     } finally {
       this.isActionLoading = false;
+      // Safely trigger change detection loop to snap template visual indicators into place
+      this.changeDetectorRef.detectChanges();
     }
   }
 

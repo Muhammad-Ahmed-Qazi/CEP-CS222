@@ -1,0 +1,314 @@
+// Design System Variables
+$bg-color: #0b0f19;
+$card-bg: #111827;
+$border-color: #1f2937;
+$primary: #3b82f6;
+$primary-hover: #2563eb;
+$success: #34d399;
+$success-bg: rgba(16, 185, 129, 0.1);
+$error: #f87171;
+$error-bg: rgba(239, 68, 68, 0.1);
+$warning: #fbbf24;
+$warning-bg: rgba(251, 191, 36, 0.1);
+$text-primary: #f8fafc;
+$text-muted: #94a3b8;
+$text-hint: #64748b;
+
+// Animation
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+// Layout
+.bins-page {
+  padding: 24px;
+  font-family: 'Inter', sans-serif;
+  color: $text-primary;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 24px;
+  
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+  }
+  
+  .subtitle {
+    color: $text-muted;
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+// Summary Strip
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+
+  .stat-card {
+    background-color: $card-bg;
+    border: 1px solid $border-color;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+
+    .stat-label {
+      color: $text-muted;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: $text-primary;
+    }
+
+    &.stat-success .stat-value { color: $success; }
+    &.stat-error .stat-value { color: $error; }
+  }
+}
+
+// Bins Grid
+.bins-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Bin Card
+.bin-card {
+  background-color: $card-bg;
+  border: 1px solid $border-color;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    .card-title {
+      h2 {
+        font-size: 32px;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        color: $text-primary;
+      }
+      .kiosk-label {
+        font-size: 13px;
+        color: $text-hint;
+      }
+    }
+
+    .job-badge {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid $border-color;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: $text-muted;
+      
+      span {
+        color: $text-primary;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .capacity-section {
+    .capacity-bar-track {
+      background-color: $border-color;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+
+      .capacity-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.4s ease, background-color 0.4s ease;
+
+        &.bar-success { background-color: $success; }
+        &.bar-warning { background-color: $warning; }
+        &.bar-error { background-color: $error; }
+      }
+    }
+
+    .capacity-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+
+      .muted-text { color: $text-muted; }
+      .pages-text {
+        color: $text-hint;
+        strong { color: $text-primary; }
+      }
+    }
+  }
+
+  .card-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 16px;
+    margin-top: auto;
+
+    .status-badge {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+
+      &.badge-available { background-color: $success-bg; color: $success; }
+      &.badge-reserved { background-color: $warning-bg; color: $warning; }
+      &.badge-full { background-color: $error-bg; color: $error; }
+    }
+
+    .action-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .status-select {
+        background-color: $bg-color;
+        border: 1px solid $border-color;
+        color: $text-primary;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+        outline: none;
+        transition: all 0.2s;
+
+        &:focus {
+          border-color: $primary;
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        option {
+          background-color: $card-bg;
+          color: $text-primary;
+        }
+      }
+    }
+  }
+
+  .inline-error {
+    margin-top: -8px;
+    font-size: 12px;
+    color: $error;
+    text-align: right;
+  }
+}
+
+// Global & States
+.global-error {
+  background-color: $error-bg;
+  color: $error;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+
+  svg { width: 20px; height: 20px; }
+  
+  .btn-text {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: $error;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 64px 20px;
+  background-color: $card-bg;
+  border: 1px dashed $border-color;
+  border-radius: 12px;
+  
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  h3 { margin: 0 0 8px 0; color: $text-primary; }
+  p { color: $text-muted; margin: 0; }
+}
+
+// Spinners & Skeletons
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid $border-color;
+  border-top-color: $primary;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.skeleton-card {
+  pointer-events: none;
+  
+  .skel-title, .skel-subtitle, .skel-bar, .skel-controls {
+    background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.02) 75%);
+    background-size: 400% 100%;
+    animation: skeleton-load 1.5s ease-in-out infinite;
+    border-radius: 4px;
+  }
+
+  .skel-title { height: 32px; width: 40%; margin-bottom: 8px; }
+  .skel-subtitle { height: 16px; width: 60%; }
+  .skel-bar { height: 8px; width: 100%; margin: 24px 0; }
+  .skel-controls { height: 36px; width: 100%; border-radius: 8px; }
+}
+
+@keyframes skeleton-load {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

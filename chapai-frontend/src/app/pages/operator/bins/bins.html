@@ -1,1 +1,92 @@
-<p>bins works!</p>
+<div class="bins-page fade-in-up">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="title-block">
+      <h1>Bins Overview</h1>
+      <p class="subtitle">Location: {{ operatorLocation }}</p>
+    </div>
+  </header>
+
+  <!-- Global Error -->
+  <div class="global-error" *ngIf="globalError">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    {{ globalError }}
+    <button class="btn-text" (click)="fetchBins()">Retry</button>
+  </div>
+
+  <!-- Summary Strip -->
+  <div class="summary-strip">
+    <div class="stat-card">
+      <span class="stat-label">Total Bins</span>
+      <span class="stat-value">{{ isLoading ? '-' : totalBins }}</span>
+    </div>
+    <div class="stat-card stat-success">
+      <span class="stat-label">Available</span>
+      <span class="stat-value">{{ isLoading ? '-' : availableBins }}</span>
+    </div>
+    <div class="stat-card stat-error">
+      <span class="stat-label">Full</span>
+      <span class="stat-value">{{ isLoading ? '-' : fullBins }}</span>
+    </div>
+  </div>
+
+  <!-- Loading Skeletons -->
+  <div class="bins-grid" *ngIf="isLoading">
+    <div class="bin-card skeleton-card" *ngFor="let s of skeletonArray">
+      <div class="skel-title"></div>
+      <div class="skel-subtitle"></div>
+      <div class="skel-bar"></div>
+      <div class="skel-controls"></div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading && bins.length === 0 && !globalError">
+    <div class="empty-icon">🗄️</div>
+    <h3>No Bins Found</h3>
+    <p>There are currently no bins assigned to this kiosk.</p>
+  </div>
+
+  <!-- Bins Grid -->
+  <div class="bins-grid" *ngIf="!isLoading && bins.length > 0">
+    <div class="bin-card" *ngFor="let bin of bins">
+      
+      <!-- Card Header -->
+      <div class="card-header">
+        <div class="card-title">
+          <h2>{{ bin.binId }}</h2>
+          <span class="kiosk-label">Kiosk ID: {{ bin.kioskId }}</span>
+        </div>
+      </div>
+
+      <!-- Capacity Tracker -->
+      <div class="capacity-section">
+        <div class="capacity-bar-track">
+          <div class="capacity-bar-fill" 
+               [class]="getCapacityClass(bin)"
+               [style.width.%]="getCapacityPercentage(bin)">
+          </div>
+        </div>
+        <div class="capacity-labels">
+          <span class="muted-text">Capacity</span>
+          <span class="pages-text">
+            <strong>{{ bin.usedPages }}</strong> / {{ bin.maxPageCapacity }} pages
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Section (Readonly Status Badge Only) -->
+      <div class="card-actions">
+        <div class="status-badge" [ngClass]="'badge-' + bin.binStatus">
+          {{ bin.binStatus | titlecase }}
+        </div>
+        
+        <!-- Hint for operator role boundaries -->
+        <span class="role-hint">Read-Only</span>
+      </div>
+
+    </div>
+  </div>
+</div>
