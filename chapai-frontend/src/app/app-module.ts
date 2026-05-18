@@ -10,7 +10,7 @@ import { App } from './app';
 import { Login } from './pages/admin/login/login';
 import { OperatorShell } from './components/operator-shell/operator-shell'; // 💡 Fixed class name and path reference
 import { Queue } from './pages/operator/queue/queue';
-import { Queue as AdminQueue} from './pages/admin/queue/queue';
+import { Queue as AdminQueue } from './pages/admin/queue/queue';
 
 // Services & Guards
 import { AuthService } from './services/auth';
@@ -26,6 +26,7 @@ import { Operators } from './pages/admin/operators/operators';
 import { Kiosks } from './pages/admin/kiosks/kiosks';
 import { Users } from './pages/admin/users/users';
 import { Reports } from './pages/admin/reports/reports';
+import { Logs } from './pages/admin/logs/logs';
 
 @NgModule({
   declarations: [
@@ -41,7 +42,8 @@ import { Reports } from './pages/admin/reports/reports';
     Operators,
     Kiosks,
     Users,
-    Reports
+    Reports,
+    Logs,
   ],
   imports: [
     BrowserModule,
@@ -49,7 +51,7 @@ import { Reports } from './pages/admin/reports/reports';
     FormsModule,
     CommonModule,
     ReactiveFormsModule,
-    AppRoutingModule
+    AppRoutingModule,
   ],
   providers: [AuthService, PrintData, AuthGuard, AdminGuard, OperatorGuard],
   bootstrap: [App],

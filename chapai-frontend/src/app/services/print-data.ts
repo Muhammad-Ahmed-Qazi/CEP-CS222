@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth';
 import { Job, Bin } from '../models/dashboard.interface';
@@ -69,6 +69,32 @@ export class PrintData {
 
   getUserSummary(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/reports/user-summary`, { headers: this.getHeaders() });
+  }
+
+  // 📜 Admin System Logs Methods
+  getAuditLogs(filters: { userId?: string, actionType?: string, from?: string, to?: string }): Observable<any[]> {
+    let params = new HttpParams();
+    if (filters.userId) params = params.set('userId', filters.userId);
+    if (filters.actionType) params = params.set('actionType', filters.actionType);
+    if (filters.from) params = params.set('from', filters.from);
+    if (filters.to) params = params.set('to', filters.to);
+
+    return this.http.get<any[]>(`${this.apiUrl}/admin/logs/audit`, { 
+      headers: this.getHeaders(),
+      params 
+    });
+  }
+
+  getAccessLogs(filters: { userId?: string, from?: string, to?: string }): Observable<any[]> {
+    let params = new HttpParams();
+    if (filters.userId) params = params.set('userId', filters.userId);
+    if (filters.from) params = params.set('from', filters.from);
+    if (filters.to) params = params.set('to', filters.to);
+
+    return this.http.get<any[]>(`${this.apiUrl}/admin/logs/access`, { 
+      headers: this.getHeaders(),
+      params 
+    });
   }
 
   // Generic fallback if needed elsewhere

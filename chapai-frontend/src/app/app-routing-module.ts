@@ -18,6 +18,7 @@ import { Operators } from './pages/admin/operators/operators';
 import { Kiosks } from './pages/admin/kiosks/kiosks';
 import { Users } from './pages/admin/users/users';
 import { Reports } from './pages/admin/reports/reports';
+import { Logs } from './pages/admin/logs/logs';
 
 const routes: Routes = [
   { path: 'login', component: Login },
@@ -43,7 +44,8 @@ const routes: Routes = [
       { path: 'operators', component: Operators },
       { path: 'kiosks', component: Kiosks },
       { path: 'users', component: Users },
-      { path: 'reports', component: Reports }
+      { path: 'reports', component: Reports },
+      { path: 'logs', component: Logs }
     ]
   },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
