@@ -82,7 +82,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"password\"\n}"
+              "raw": "{\n  \"email\": \"ahmed@test.com\",\n  \"password\": \"newpass123\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
@@ -108,7 +108,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"password\"\n}"
+                  "raw": "{\n  \"email\": \"ahmed@test.com\",\n  \"password\": \"newpass123\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/auth/login",
@@ -247,7 +247,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiYWhtZWRAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY3NzY1NCwiZXhwIjoxNzc4NjgxMjU0fQ.0U2rzURV77-khk-_ho_LRP73tjYS1jTuc6Sxyfj8bfI",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInN1YiI6MiwiZW1haWwiOiIkMmIkMTAkSHNIWGx1VjlyeXRhdXBLR21NZ2dqdWRMZjNQWEtRN3VxOU5NY2ZNRjZZYW9uSmxBNXVqZXUiLCJyb2xlIjoic3R1ZGVudCIsImFjY2Vzc0lkIjo3LCJpYXQiOjE3Nzg3NzQwMzIsImV4cCI6MTc3ODc3NzYzMn0.YeMyK_5olrHthuiTG0Cs8J-K4gyKdobeslHiKtLFKW8",
                   "type": "string"
                 }
               ]
@@ -342,6 +342,51 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaziiam_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"ahmed@test.com\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/forgot-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
         }
       ]
     },
@@ -356,7 +401,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjY2LCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY4NDM1MCwiZXhwIjoxNzc4Njg3OTUwfQ.alhYaRRhj309kmFx-fmjHvqXrOeaqsmQsYWOqKZJA1s",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInN1YiI6MiwiZW1haWwiOiIkMmIkMTAkUVZHZkJjVDFHVVhKZm1pWTUxVk1yZW1pNkxEbzZZeTBYcWlCbTFMdDBvaElOa1lXakV5aTIiLCJyb2xlIjoic3R1ZGVudCIsImFjY2Vzc0lkIjoyNywiaWF0IjoxNzc4ODA2MDU0LCJleHAiOjE3Nzg4MDk2NTR9.FP2lM9RaQT7ReI7wC-0EjxmWHXD72YwjVcHtr8Scplc",
                   "type": "string"
                 }
               ]
@@ -374,7 +419,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "/home/qaziiam/Documents/Blank Page.pdf"
+                  "src": "/home/qaziiam/Downloads/Onboarding - CEP-CS222 Mujtaba.pdf"
                 },
                 {
                   "key": "jobType",
@@ -389,7 +434,7 @@
                 },
                 {
                   "key": "copies",
-                  "value": "2",
+                  "value": "22",
                   "type": "text",
                   "uuid": "971550ad-8dd7-4c24-a3ef-74b420d5733a"
                 },
@@ -432,7 +477,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjY2LCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY4NDM1MCwiZXhwIjoxNzc4Njg3OTUwfQ.alhYaRRhj309kmFx-fmjHvqXrOeaqsmQsYWOqKZJA1s",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInN1YiI6MiwiZW1haWwiOiIkMmIkMTAkUVZHZkJjVDFHVVhKZm1pWTUxVk1yZW1pNkxEbzZZeTBYcWlCbTFMdDBvaElOa1lXakV5aTIiLCJyb2xlIjoic3R1ZGVudCIsImFjY2Vzc0lkIjoyNywiaWF0IjoxNzc4ODA2MDU0LCJleHAiOjE3Nzg4MDk2NTR9.FP2lM9RaQT7ReI7wC-0EjxmWHXD72YwjVcHtr8Scplc",
                       "type": "string"
                     }
                   ]
@@ -450,7 +495,7 @@
                     {
                       "key": "file",
                       "type": "file",
-                      "src": "/home/qaziiam/Documents/Blank Page.pdf"
+                      "src": "/home/qaziiam/Downloads/Onboarding - CEP-CS222 Mujtaba.pdf"
                     },
                     {
                       "key": "jobType",
@@ -465,7 +510,7 @@
                     },
                     {
                       "key": "copies",
-                      "value": "2",
+                      "value": "22",
                       "type": "text",
                       "uuid": "971550ad-8dd7-4c24-a3ef-74b420d5733a"
                     },
@@ -516,7 +561,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiYWhtZWRAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODI0ODA2NiwiZXhwIjoxNzc4MjUxNjY2fQ.6rolh-c2gWXsM6wIPny5Hcf6_iUwkji1Dz56xPCok3k",
+                  "value": "{{qaziiam_token}}",
                   "type": "string"
                 }
               ]
@@ -529,12 +574,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/jobs",
+              "raw": "{{baseUrl}}/jobs/:id",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "jobs"
+                "jobs",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "154"
+                }
               ]
             }
           },
@@ -547,7 +599,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiYWhtZWRAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODI0ODA2NiwiZXhwIjoxNzc4MjUxNjY2fQ.6rolh-c2gWXsM6wIPny5Hcf6_iUwkji1Dz56xPCok3k",
+                      "value": "{{qaziiam_token}}",
                       "type": "string"
                     }
                   ]
@@ -560,12 +612,19 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{baseUrl}}/jobs",
+                  "raw": "{{baseUrl}}/jobs/:id",
                   "host": [
                     "{{baseUrl}}"
                   ],
                   "path": [
-                    "jobs"
+                    "jobs",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "154"
+                    }
                   ]
                 }
               },
@@ -577,6 +636,191 @@
               "body": "{\n  \"jobId\": 5042,\n  \"status\": \"COMPLETED\",\n  \"binId\": \"B4\",\n  \"qrToken\": \"campus-print-secure-token-8f92a\"\n}"
             }
           ]
+        },
+        {
+          "name": "Cancel Job",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjgzLCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODczMDM3OSwiZXhwIjoxNzc4NzMzOTc5fQ.h0mcVkgMB91mL2SSKCMnOlucgFOx-zLs29OHuZFyrb8",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jobs",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "105"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reprint Job",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInN1YiI6MiwiZW1haWwiOiIkMmIkMTAkUVZHZkJjVDFHVVhKZm1pWTUxVk1yZW1pNkxEbzZZeTBYcWlCbTFMdDBvaElOa1lXakV5aTIiLCJyb2xlIjoic3R1ZGVudCIsImFjY2Vzc0lkIjoyNywiaWF0IjoxNzc4ODA2MDU0LCJleHAiOjE3Nzg4MDk2NTR9.FP2lM9RaQT7ReI7wC-0EjxmWHXD72YwjVcHtr8Scplc",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"collectionSlot\": \"2026-05-14T14:00:00.000Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs/:id/reprint",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "jobs",
+                ":id",
+                "reprint"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Job QR",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaziiam_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/jobs/:id/qr",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "jobs",
+                ":id",
+                "qr"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "210"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Job Invoice",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaziiam_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/jobs/:id/invoice",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "jobs",
+                ":id",
+                "invoice"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "155"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Jobs Filter",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{qaziiam_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/jobs?status=Collected&jobType=normal",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "jobs"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Collected"
+                },
+                {
+                  "key": "jobType",
+                  "value": "normal"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -729,6 +973,16 @@
         {
           "name": "Delete User",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "DELETE",
             "header": [],
             "url": {
@@ -744,7 +998,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": ""
+                  "value": "83"
                 }
               ]
             }
@@ -829,7 +1083,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjY2LCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3ODY4NDM1MCwiZXhwIjoxNzc4Njg3OTUwfQ.alhYaRRhj309kmFx-fmjHvqXrOeaqsmQsYWOqKZJA1s",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInN1YiI6MiwiZW1haWwiOiIkMmIkMTAkUVZHZkJjVDFHVVhKZm1pWTUxVk1yZW1pNkxEbzZZeTBYcWlCbTFMdDBvaElOa1lXakV5aTIiLCJyb2xlIjoic3R1ZGVudCIsImFjY2Vzc0lkIjoyNywiaWF0IjoxNzc4ODA2MDU0LCJleHAiOjE3Nzg4MDk2NTR9.FP2lM9RaQT7ReI7wC-0EjxmWHXD72YwjVcHtr8Scplc",
                   "type": "string"
                 }
               ]
@@ -847,7 +1101,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"amount\": 100.00\n}"
+              "raw": "{\n  \"amount\": 1000.00\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/transactions/topup",
@@ -982,7 +1236,7 @@
       ]
     },
     {
-      "name": "Notifications",
+      "name": "6. Notifications",
       "item": [
         {
           "name": "Get Notifications",
@@ -1097,6 +1351,727 @@
               "path": [
                 "notifications",
                 ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Operator Operations",
+      "item": [
+        {
+          "name": "Update Job Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operator_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Binned\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/operator/jobs/:id/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "operator",
+                "jobs",
+                ":id",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "171"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Printing Queue",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operator_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/operator/queue",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "operator",
+                "queue"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Job to Bin",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"binId\": \"A4\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/operator/jobs/:id/assign-bin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "operator",
+                "jobs",
+                ":id",
+                "assign-bin"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "190"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Job Handover",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operator_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"binId\": \"A4\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/operator/jobs/:id/handover",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "operator",
+                "jobs",
+                ":id",
+                "handover"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "171"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Discard Job",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operator_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/operator/jobs/:id/discard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "operator",
+                "jobs",
+                ":id",
+                "discard"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "22"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator Bins",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operator_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/operator/bins",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "operator",
+                "bins"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operator_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/operator/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "operator",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "QR Lookup",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{operator_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/operator/jobs/qr/:token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "operator",
+                "jobs",
+                "qr",
+                ":token"
+              ],
+              "variable": [
+                {
+                  "key": "token",
+                  "value": "2eccfb0a-ed5c-452f-a8a4-4c51fde06597"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Kiosk Management",
+      "item": [
+        {
+          "name": "Get All Kiosks",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/kiosks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "kiosks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create a Kiosk",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationName\": \"Engineering Block\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/kiosks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "kiosks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Kiosk",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"inactive\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/kiosks/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "kiosks",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "21"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Kiosk Bins",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/kiosks/:id/bins",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "kiosks",
+                ":id",
+                "bins"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Bin",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"binId\": \"A4\",\n  \"maxPageCapacity\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/kiosks/:id/bins",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "kiosks",
+                ":id",
+                "bins"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Bin",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"binStatus\": \"maintenance\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/kiosks/:id/bins/:binId",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "kiosks",
+                ":id",
+                "bins",
+                ":binId"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                },
+                {
+                  "key": "binId",
+                  "value": "A4"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Available Bins",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/kiosks/available-bins?pages=200",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "kiosks",
+                "available-bins"
+              ],
+              "query": [
+                {
+                  "key": "pages",
+                  "value": "200"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Bin",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/kiosks/:id/bins/:binId",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "kiosks",
+                ":id",
+                "bins",
+                ":binId"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                },
+                {
+                  "key": "binId",
+                  "value": "A4"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Kiosk",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/kiosks/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "kiosks",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "21"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9. Logs",
+      "item": [
+        {
+          "name": "Get Access Log",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/logs/access",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "logs",
+                "access"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Filter Logs",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/logs/access?userId=42",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "logs",
+                "access"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "42"
+                }
               ]
             }
           },
