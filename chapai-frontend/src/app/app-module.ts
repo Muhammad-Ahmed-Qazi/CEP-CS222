@@ -10,7 +10,6 @@ import { App } from './app';
 import { Login } from './pages/admin/login/login';
 import { OperatorShell } from './components/operator-shell/operator-shell'; // 💡 Fixed class name and path reference
 import { Queue } from './pages/operator/queue/queue';
-import { AdminDashboardStubComponent } from './app-routing-module';
 import { Queue as AdminQueue} from './pages/admin/queue/queue';
 
 // Services & Guards
@@ -25,6 +24,8 @@ import { Profile } from './pages/operator/profile/profile';
 import { AdminShell } from './components/admin-shell/admin-shell';
 import { Operators } from './pages/admin/operators/operators';
 import { Kiosks } from './pages/admin/kiosks/kiosks';
+import { Users } from './pages/admin/users/users';
+import { Reports } from './pages/admin/reports/reports';
 
 @NgModule({
   declarations: [
@@ -38,7 +39,9 @@ import { Kiosks } from './pages/admin/kiosks/kiosks';
     AdminShell,
     AdminQueue, // 💡 CRITICAL: Added to declarations so template bindings like onRefresh and queues work without errors
     Operators,
-    Kiosks
+    Kiosks,
+    Users,
+    Reports
   ],
   imports: [
     BrowserModule,
@@ -46,10 +49,7 @@ import { Kiosks } from './pages/admin/kiosks/kiosks';
     FormsModule,
     CommonModule,
     ReactiveFormsModule,
-    AppRoutingModule,
-
-    // Standalone Components belong here in imports
-    AdminDashboardStubComponent,
+    AppRoutingModule
   ],
   providers: [AuthService, PrintData, AuthGuard, AdminGuard, OperatorGuard],
   bootstrap: [App],

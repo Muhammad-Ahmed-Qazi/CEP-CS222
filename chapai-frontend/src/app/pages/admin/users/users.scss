@@ -1,0 +1,367 @@
+/* Variables from Design System */
+$bg-main: #0b0f19;
+$bg-card: #111827;
+$border-color: #1f2937;
+$primary: #3b82f6;
+$text-primary: #f8fafc;
+$text-secondary: #94a3b8;
+$text-muted: #64748b;
+
+/* Role Colors */
+$color-student: #3b82f6; // Blue
+$color-faculty: #a855f7; // Purple
+$color-operator: #f59e0b; // Amber
+$color-admin: #ef4444; // Red
+
+.admin-users-page {
+  font-family: 'Inter', sans-serif;
+  color: $text-primary;
+  padding: 24px;
+}
+
+/* Typography Utilities */
+.text-muted { color: $text-muted; }
+.text-secondary { color: $text-secondary; }
+.text-sm { font-size: 0.875rem; }
+.text-right { text-align: right; }
+.text-blue { color: $color-student; }
+.text-purple { color: $color-faculty; }
+.text-green { color: #10b981; }
+.text-amber { color: $color-operator; }
+.text-red { color: $color-admin; }
+
+/* Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+  }
+
+  .badge-count {
+    background: rgba($primary, 0.1);
+    color: $primary;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+}
+
+/* Search Input */
+.search-wrapper {
+  position: relative;
+  width: 300px;
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: $text-muted;
+  }
+
+  .search-input {
+    width: 100%;
+    background: $bg-card;
+    border: 1px solid $border-color;
+    border-radius: 6px;
+    padding: 8px 12px 8px 36px;
+    color: $text-primary;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+
+    &:focus {
+      border-color: $primary;
+    }
+    &::placeholder {
+      color: $text-muted;
+    }
+  }
+}
+
+/* Stats Strip */
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+
+  .stat-card {
+    background: $bg-card;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .stat-label {
+      color: $text-muted;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+  }
+}
+
+/* Table Card */
+.table-card {
+  background: $bg-card;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  overflow: hidden;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  th {
+    padding: 12px 16px;
+    background: rgba($bg-main, 0.4);
+    color: $text-muted;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-bottom: 1px solid $border-color;
+  }
+
+  td {
+    padding: 16px;
+    border-bottom: 1px solid $border-color;
+    vertical-align: middle;
+  }
+
+  tbody tr {
+    transition: background-color 0.2s, opacity 0.3s ease;
+    
+    &:hover:not(.confirmation-row) {
+      background-color: rgba($bg-main, 0.3);
+    }
+    
+    &.fading-out {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+  }
+}
+
+/* User Cell & Avatar */
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    flex-shrink: 0;
+
+    &.avatar-student { color: $color-student; background: rgba($color-student, 0.15); }
+    &.avatar-faculty { color: $color-faculty; background: rgba($color-faculty, 0.15); }
+    &.avatar-operator { color: $color-operator; background: rgba($color-operator, 0.15); }
+    &.avatar-admin { color: $color-admin; background: rgba($color-admin, 0.15); }
+  }
+
+  .user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    
+    .user-name { font-weight: 500; }
+    .user-email { font-size: 0.875rem; }
+  }
+}
+
+/* Role Badges */
+.role-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &.badge-student { color: $color-student; background: rgba($color-student, 0.1); border: 1px solid rgba($color-student, 0.2); }
+  &.badge-faculty { color: $color-faculty; background: rgba($color-faculty, 0.1); border: 1px solid rgba($color-faculty, 0.2); }
+  &.badge-operator { color: $color-operator; background: rgba($color-operator, 0.1); border: 1px solid rgba($color-operator, 0.2); }
+  &.badge-admin { color: $color-admin; background: rgba($color-admin, 0.1); border: 1px solid rgba($color-admin, 0.2); }
+}
+
+.balance-text { font-weight: 500; }
+
+/* Buttons */
+.btn-delete-outline {
+  background: transparent;
+  color: $color-admin;
+  border: 1px solid rgba($color-admin, 0.5);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: rgba($color-admin, 0.1);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* Inline Confirmation */
+.confirmation-row td {
+  padding: 0;
+  border-bottom: 1px solid $border-color;
+  background: rgba($color-admin, 0.05);
+}
+
+.confirmation-content {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 3px solid $color-admin;
+
+  .confirmation-actions {
+    display: flex;
+    gap: 12px;
+
+    button {
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      font-weight: 500;
+      border: none;
+    }
+
+    .btn-cancel {
+      background: transparent;
+      color: $text-secondary;
+      &:hover { color: $text-primary; }
+    }
+
+    .btn-delete {
+      background: $color-admin;
+      color: white;
+      &:hover { background: darken($color-admin, 10%); }
+    }
+  }
+}
+
+/* Pagination */
+.pagination-footer {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid $border-color;
+
+  .page-controls {
+    display: flex;
+    gap: 8px;
+
+    .btn-icon {
+      background: transparent;
+      border: 1px solid $border-color;
+      color: $text-primary;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      
+      &:hover:not(:disabled) { background: $border-color; }
+      &:disabled { opacity: 0.5; cursor: not-allowed; }
+    }
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px !important;
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid $border-color;
+    color: $text-primary;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 12px;
+    &:hover { background: $border-color; }
+  }
+}
+
+/* Loading & Skeletons */
+.relative { position: relative; }
+
+.table-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba($bg-card, 0.7);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+
+  .spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid $border-color;
+    border-top-color: $primary;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, $border-color 25%, rgba($border-color, 0.5) 50%, $border-color 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 4px;
+}
+
+.flex-align { display: flex; align-items: center; gap: 12px; }
+.avatar-skeleton { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
+.text-skeleton { height: 14px; width: 120px; }
+.text-skeleton.short { width: 80px; }
+.badge-skeleton { height: 24px; width: 70px; border-radius: 12px; }
+.btn-skeleton { height: 32px; width: 60px; border-radius: 6px; }
+.pull-right { margin-left: auto; }
+.mb-1 { margin-bottom: 4px; }
+.mt-3 { margin-top: 12px; }
+
+/* Animations */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@keyframes slideDown { 
+  from { opacity: 0; transform: translateY(-10px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}
+
+.fade-in { animation: slideDown 0.3s ease-out; }
+.slide-down { animation: slideDown 0.2s ease-out forwards; }

@@ -35,24 +35,44 @@ export class PrintData {
 
   getAvailableBins(pages: number): Observable<Bin[]> {
     return this.http.get<Bin[]>(
-      `${this.apiUrl}/operator/available-bins?pages=${pages}`, 
+      `${this.apiUrl}/operator/available-bins?pages=${pages}`,
       { headers: this.getHeaders() }
     );
   }
 
-  // 💡 Add this method
   getJobByQr(token: string): Observable<Job> {
     return this.http.get<Job>(`${this.apiUrl}/jobs/qr/${token}`);
   }
 
-  // 💡 Add this method
   confirmHandover(jobId: number, updatePayload: { status: string }): Observable<any> {
     return this.http.patch(`${this.apiUrl}/jobs/${jobId}/handover`, updatePayload);
   }
 
   getOperatorProfile(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/operator/profile`, { 
-      headers: this.getHeaders() 
+    return this.http.get<any>(`${this.apiUrl}/operator/profile`, {
+      headers: this.getHeaders()
     });
+  }
+
+  getAdminUsers(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/admin/users`, { headers: this.getHeaders() });
+  }
+
+  deleteAdminUser(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/admin/users/${id}`, { headers: this.getHeaders() });
+  }
+
+  // 📊 Dedicated Report Methods
+  getDailyReports(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/reports/daily`, { headers: this.getHeaders() });
+  }
+
+  getUserSummary(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/reports/user-summary`, { headers: this.getHeaders() });
+  }
+
+  // Generic fallback if needed elsewhere
+  get<T>(url: string): Observable<T> {
+    return this.http.get<T>(url); 
   }
 }

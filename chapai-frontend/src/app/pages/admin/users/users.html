@@ -1,1 +1,153 @@
-<p>users works!</p>
+<div class="admin-users-page fade-in">
+  
+  <div class="page-header">
+    <div class="header-left">
+      <h1>User Management</h1>
+      <span class="badge badge-count">{{ filteredUsers.length }} Found</span>
+    </div>
+    <div class="header-right">
+      <div class="search-wrapper">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" [formControl]="searchControl" placeholder="Search by name or email..." class="search-input">
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-strip">
+    <div class="stat-card">
+      <span class="stat-label">Total Users</span>
+      <span class="stat-value">{{ stats.total }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Total Students</span>
+      <span class="stat-value text-blue">{{ stats.students }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Total Faculty</span>
+      <span class="stat-value text-purple">{{ stats.faculty }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Total Balance</span>
+      <span class="stat-value text-green">{{ stats.totalBalance | currency:'PKR':'symbol':'1.2-2' }}</span>
+    </div>
+  </div>
+
+  <div class="table-card relative">
+    
+    <div class="table-overlay" *ngIf="isTableLoading">
+      <div class="spinner"></div>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Role</th>
+          <th>Balance</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <ng-container *ngIf="isLoading">
+          <tr *ngFor="let s of [1,2,3,4,5]">
+            <td>
+              <div class="flex-align">
+                <div class="skeleton avatar-skeleton"></div>
+                <div>
+                  <div class="skeleton text-skeleton mb-1"></div>
+                  <div class="skeleton text-skeleton short"></div>
+                </div>
+              </div>
+            </td>
+            <td><div class="skeleton badge-skeleton"></div></td>
+            <td><div class="skeleton text-skeleton short"></div></td>
+            <td><div class="skeleton btn-skeleton pull-right"></div></td>
+          </tr>
+        </ng-container>
+
+        <ng-container *ngIf="!isLoading && paginatedUsers.length > 0">
+          <ng-container *ngFor="let user of paginatedUsers">
+            
+            <tr [class.fading-out]="user.isFadingOut">
+              <td>
+                <div class="user-cell">
+                  <div class="avatar" [ngClass]="{
+                    'avatar-student': (user.role | lowercase) === 'student',
+                    'avatar-faculty': (user.role | lowercase) === 'faculty',
+                    'avatar-admin': (user.role | lowercase) === 'admin',
+                    'avatar-operator': (user.role | lowercase) === 'guest'
+                  }">
+                    {{ getInitials(user.firstName, user.lastName) }}
+                  </div>
+                  <div class="user-info">
+                    <span class="user-name">{{ user.firstName }} {{ user.lastName }}</span>
+                    <span class="user-email text-muted">{{ user.email }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="role-badge" [ngClass]="{
+                  'badge-student': (user.role | lowercase) === 'student',
+                  'badge-faculty': (user.role | lowercase) === 'faculty',
+                  'badge-admin': (user.role | lowercase) === 'admin',
+                  'badge-operator': (user.role | lowercase) === 'guest'
+                }">
+                  {{ (user.role | lowercase) === 'guest' ? 'operator' : user.role }}
+                </span>
+              </td>
+              <td>
+                <span class="balance-text" 
+                      [class.text-green]="user.accountBalance >= 50"
+                      [class.text-amber]="user.accountBalance > 0 && user.accountBalance < 50"
+                      [class.text-red]="user.accountBalance === 0">
+                  {{ user.accountBalance | currency:'PKR':'symbol':'1.2-2' }}
+                </span>
+              </td>
+              <td class="text-right">
+                <button class="btn-delete-outline" 
+                        [disabled]="userToDeleteId === user.userId"
+                        (click)="triggerDelete(user.userId)">
+                  Delete
+                </button>
+              </td>
+            </tr>
+
+            <tr class="confirmation-row" *ngIf="userToDeleteId === user.userId" [class.fading-out]="user.isFadingOut">
+              <td colspan="4" class="confirmation-cell">
+                <div class="confirmation-content slide-down">
+                  <span class="text-primary">Are you sure you want to delete <strong>{{ user.firstName }} {{ user.lastName }}</strong>? This cannot be undone.</span>
+                  <div class="confirmation-actions">
+                    <button class="btn-cancel" (click)="cancelDelete()">Cancel</button>
+                    <button class="btn-delete" (click)="confirmDelete(user.userId)">Confirm Delete</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            
+          </ng-container>
+        </ng-container>
+
+        <tr *ngIf="!isLoading && filteredUsers.length === 0">
+          <td colspan="4" class="empty-state">
+            <p class="text-muted">{{ hasSearched ? 'No users found matching your search.' : 'No users registered yet.' }}</p>
+            <button *ngIf="hasSearched" class="btn-secondary mt-3" (click)="clearSearch()">Clear Search</button>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+
+    <div class="pagination-footer" *ngIf="!isLoading && filteredUsers.length > 0">
+      <span class="text-muted text-sm">Page {{ currentPage }} of {{ totalPages }}</span>
+      <div class="page-controls">
+        <button class="btn-icon" [disabled]="currentPage === 1" (click)="prevPage()">Previous</button>
+        <button class="btn-icon" [disabled]="currentPage === totalPages" (click)="nextPage()">Next</button>
+      </div>
+    </div>
+
+  </div>
+</div>
